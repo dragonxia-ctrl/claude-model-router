@@ -1,0 +1,31 @@
+name: Feature request
+description: Propose an improvement with safety and evidence considerations
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: What cannot be done well today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Routing evidence, if applicable
+      description: Benchmark sources, traces, positive cases, and near-miss false positives.
+  - type: textarea
+    id: safety
+    attributes:
+      label: Safety and rollback impact
+      description: Required for installer, settings, authentication, or deployment changes.
+  - type: markdown
+    attributes:
+      value: Only DeepSeek and Kimi are currently supported. New providers require an architecture discussion before implementation.

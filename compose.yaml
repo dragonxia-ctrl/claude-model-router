@@ -1,0 +1,25 @@
+services:
+  router:
+    build:
+      context: .
+    image: ${CLAUDE_ROUTER_IMAGE:-claude-model-router:local}
+    environment:
+      CLAUDE_ROUTER_CONFIG: /data/config.json
+      CLAUDE_ROUTER_HOST: 0.0.0.0
+      CLAUDE_ROUTER_PORT: ${CLAUDE_ROUTER_PORT:-17861}
+    ports:
+      - "127.0.0.1:${CLAUDE_ROUTER_PORT:-17861}:${CLAUDE_ROUTER_PORT:-17861}"
+    volumes:
+      - type: bind
+        source: ${CLAUDE_ROUTER_DATA_DIR:?Set CLAUDE_ROUTER_DATA_DIR to the directory containing config.json}
+        target: /data
+        read_only: true
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    init: true

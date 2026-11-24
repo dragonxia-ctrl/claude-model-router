@@ -1,0 +1,50 @@
+name: Bug report
+description: Report a reproducible problem without sharing secrets
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Do not include API keys, local tokens, private prompts, full configs, or personal file paths.** Use dummy values and redact usernames.
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Expected behavior, actual behavior, and error text.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      placeholder: |
+        1. Run ...
+        2. Send ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options: [macOS, Linux, Windows, Other]
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: Router commit/version, Node.js, Docker, Claude Code.
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification already performed
+      description: Offline tests, container tests, doctor, preview, or real-provider test. Do not paste secrets.
+  - type: checkboxes
+    id: redaction
+    options:
+      - label: I removed all credentials and personal information.
+        required: true

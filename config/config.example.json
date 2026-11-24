@@ -1,0 +1,26 @@
+{
+  "router": {
+    "host": "127.0.0.1",
+    "port": 17861,
+    "token": "REPLACE_WITH_64_CHARACTER_HEX_LOCAL_TOKEN"
+  },
+  "providers": {
+    "kimi": {
+      "baseUrl": "https://api.moonshot.cn/anthropic",
+      "model": "kimi-k3.1-pro",
+      "apiKey": "REPLACE_WITH_YOUR_KIMI_API_KEY"
+    },
+    "deepseek": {
+      "baseUrl": "https://api.deepseek.com/anthropic",
+      "model": "deepseek-flash",
+      "apiKey": "REPLACE_WITH_YOUR_DEEPSEEK_API_KEY"
+    }
+  },
+  "routing": {
+    "semanticTriage": true,
+    "triageMinChars": 40,
+    "triageConfidence": 0.8,
+    "triageTimeoutMs": 8000,
+    "triageMaxInputChars": 6000
+  }
+}

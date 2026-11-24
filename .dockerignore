@@ -1,0 +1,15 @@
+.git
+.github
+test
+docs
+bin
+config
+*.md
+.env
+.env.*
+backups
+node_modules
+coverage
+*.log
+*.bak
+.DS_Store

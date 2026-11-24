@@ -1,0 +1,14 @@
+node_modules/
+coverage/
+.env
+.env.*
+config/config.json
+/config.json
+config/*.local.json
+install-manifest.json
+local-token.mjs
+backups/
+*.log
+*.bak
+.DS_Store
+Thumbs.db

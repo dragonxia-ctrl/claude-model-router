@@ -1,0 +1,58 @@
+{
+  "name": "claude-model-router",
+  "version": "1.0.0",
+  "description": "A local routing proxy that lets Claude Code choose between DeepSeek and Kimi per task, with safe installation and Docker deployment.",
+  "type": "module",
+  "bin": {
+    "claude-router": "bin/claude-router.mjs"
+  },
+  "scripts": {
+    "start": "node src/router.mjs",
+    "setup": "node bin/claude-router.mjs install",
+    "doctor": "node bin/claude-router.mjs doctor",
+    "status": "node bin/claude-router.mjs status",
+    "test": "node --test test/run.mjs",
+    "verify": "node bin/claude-router.mjs verify",
+    "verify:live": "node bin/claude-router.mjs verify-live",
+    "compose:up": "node bin/claude-router.mjs deploy",
+    "compose:down": "node bin/claude-router.mjs stop"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "claude-code",
+    "model-router",
+    "deepseek",
+    "kimi",
+    "anthropic",
+    "proxy",
+    "llm"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dragonxia-ctrl/claude-model-router.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dragonxia-ctrl/claude-model-router/issues"
+  },
+  "homepage": "https://github.com/dragonxia-ctrl/claude-model-router#readme",
+  "files": [
+    "bin",
+    "src",
+    "scripts",
+    "config",
+    "docs",
+    "test",
+    "compose.yaml",
+    "Dockerfile",
+    "README.md",
+    "README.zh-CN.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+    "CODE_OF_CONDUCT.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ]
+}
