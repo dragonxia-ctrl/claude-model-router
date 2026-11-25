@@ -71,7 +71,7 @@ Manual Node deployments can set:
 
 `CLAUDE_ROUTER_TELEMETRY_DIR` overrides the directory and enables persistence. Set `CLAUDE_ROUTER_TELEMETRY=0` to disable telemetry collection. The supplied Compose deployment sets `CLAUDE_ROUTER_TELEMETRY_DIR=/telemetry`, so it persists to the `router-telemetry` named volume by default.
 
-Files are named `requests-YYYY-MM-DD[-n].jsonl`, created with owner-only permissions, rotated at `maxFileBytes`, and cleaned by age according to `retentionDays`. Rotation limits each file, not the total daily volume. A bounded write buffer drops records rather than blocking request traffic; drops and write errors are visible in telemetry. If the salt or directory cannot be initialized, persistence is disabled instead of crashing the router.
+Files are named `requests-YYYY-MM-DD[-n].jsonl`, created with owner-only permissions on POSIX (Windows uses the private data directory's ACL), rotated at `maxFileBytes`, and cleaned by age according to `retentionDays`. Rotation limits each file, not the total daily volume. A bounded write buffer drops records rather than blocking request traffic; drops and write errors are visible in telemetry. If the salt or directory cannot be initialized, persistence is disabled instead of crashing the router.
 
 ## Terminal usage probe
 

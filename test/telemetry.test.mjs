@@ -83,7 +83,11 @@ test('optional JSONL persistence pseudonymizes task keys and drops old files by 
   assert.match(record.conversation_key, /^[a-f0-9]{32}$/);
   assert.match(record.task_key, /^[a-f0-9]{32}$/);
   assert.notEqual(record.conversation_key, 'raw-conversation-key');
-  assert.equal(fs.statSync(path.join(directory, '.telemetry-salt')).mode & 0o777, 0o600);
+  if (process.platform !== 'win32') {
+    // Windows stat().mode does not represent POSIX chmod bits; access is
+    // controlled by the directory ACL instead.
+    assert.equal(fs.statSync(path.join(directory, '.telemetry-salt')).mode & 0o777, 0o600);
+  }
 });
 
 test('health endpoints and metrics expose real upstream usage without leaking secrets', async t => {
