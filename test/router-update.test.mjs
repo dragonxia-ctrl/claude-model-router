@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
-import { execFileSync, spawn } from 'node:child_process';
+import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { deployPlan, expectedVersion, parseArgs } from '../scripts/router-update.mjs';
 
@@ -21,7 +21,7 @@ function write(file, content) {
   fs.writeFileSync(file, content);
 }
 
-function makeRepo(root, version) {
+function writeRepo(root, version) {
   fs.mkdirSync(path.join(root, 'src'), { recursive: true });
   fs.mkdirSync(path.join(root, 'scripts'), { recursive: true });
   write(path.join(root, 'package.json'), `${JSON.stringify({ name: 'router', version }, null, 2)}\n`);
@@ -29,23 +29,27 @@ function makeRepo(root, version) {
   write(path.join(root, 'src', 'router.mjs'), '// router\n');
   write(path.join(root, 'scripts', 'version-status.mjs'), '// status\n');
   fs.copyFileSync(script, path.join(root, 'scripts', 'router-update.mjs'));
-  git(root, 'init', '-q');
-  git(root, 'add', '-A');
-  git(root, 'commit', '-q', '-m', `release ${version}`);
-  git(root, 'branch', '-M', 'main');
 }
+
+const HAS_GIT = spawnSync('git', ['--version'], { stdio: 'ignore' }).status === 0;
+const NO_GIT = HAS_GIT ? false : 'git is not installed in this test container';
 
 function setupRemote(t) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'router-update-'));
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
   const remote = path.join(root, 'remote.git');
   execFileSync('git', ['init', '-q', '--bare', remote]);
+  execFileSync('git', ['-C', remote, 'symbolic-ref', 'HEAD', 'refs/heads/main']);
   const seed = path.join(root, 'seed');
-  makeRepo(seed, '1.2.0');
+  writeRepo(seed, '1.2.0');
+  git(seed, 'init', '-q');
+  git(seed, 'add', '-A');
+  git(seed, 'commit', '-q', '-m', 'release 1.2.0');
+  git(seed, 'branch', '-M', 'main');
   git(seed, 'remote', 'add', 'origin', remote);
   git(seed, 'push', '-q', '-u', 'origin', 'main');
   const clone = path.join(root, 'clone');
-  execFileSync('git', ['clone', '-q', remote, clone]);
+  execFileSync('git', ['clone', '-q', '-b', 'main', remote, clone]);
   return { root, remote, seed, clone };
 }
 
@@ -111,7 +115,7 @@ test('argument parsing defaults and validation', () => {
 test('expectedVersion requires package.json and src/version.mjs to agree', t => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'router-version-'));
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
-  makeRepo(root, '1.2.0');
+  writeRepo(root, '1.2.0');
   assert.equal(expectedVersion(root), '1.2.0');
   write(path.join(root, 'src', 'version.mjs'), "export const ROUTER_VERSION = '9.9.9';\n");
   assert.throws(() => expectedVersion(root), /Version mismatch/);
@@ -120,7 +124,7 @@ test('expectedVersion requires package.json and src/version.mjs to agree', t => 
 test('deploy plan covers src and the two helper scripts, never config', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'router-plan-'));
   try {
-    makeRepo(root, '1.2.0');
+    writeRepo(root, '1.2.0');
     const plan = deployPlan(root);
     assert.ok(plan.has('router.mjs'));
     assert.ok(plan.has('version.mjs'));
@@ -132,7 +136,7 @@ test('deploy plan covers src and the two helper scripts, never config', () => {
   }
 });
 
-test('a dirty checkout is refused before anything is changed', async t => {
+test('a dirty checkout is refused before anything is changed', { skip: NO_GIT }, async t => {
   const { root, clone } = setupRemote(t);
   const data = dataDir(t, root);
   write(path.join(clone, 'src', 'router.mjs'), '// local edit\n');
@@ -142,7 +146,7 @@ test('a dirty checkout is refused before anything is changed', async t => {
   assert.equal(fs.existsSync(path.join(data, 'router.mjs')), false);
 });
 
-test('an up-to-date checkout is reported without deploying', async t => {
+test('an up-to-date checkout is reported without deploying', { skip: NO_GIT }, async t => {
   const { root, clone } = setupRemote(t);
   const data = dataDir(t, root);
   const result = await runUpdate(['--source', clone, '--data-dir', data, '--restart', 'none', '--skip-tests']);
@@ -151,7 +155,7 @@ test('an up-to-date checkout is reported without deploying', async t => {
   assert.equal(fs.existsSync(path.join(data, 'router.mjs')), false);
 });
 
-test('update pulls main, deploys with a backup, and verifies the live router', async t => {
+test('update pulls main, deploys with a backup, and verifies the live router', { skip: NO_GIT }, async t => {
   const { root, seed, clone } = setupRemote(t);
   const data = dataDir(t, root);
   publish(seed, '1.3.0');
@@ -172,7 +176,7 @@ test('update pulls main, deploys with a backup, and verifies the live router', a
   assert.equal(JSON.parse(fs.readFileSync(path.join(data, 'config.json'), 'utf8')).router.token, 'test-token');
 });
 
-test('a failed verification restores the previous files', async t => {
+test('a failed verification restores the previous files', { skip: NO_GIT }, async t => {
   const { root, seed, clone } = setupRemote(t);
   const data = dataDir(t, root);
   write(path.join(data, 'version.mjs'), "export const ROUTER_VERSION = '0.0.1';\n");
