@@ -403,6 +403,17 @@ node bin/claude-router.mjs restart
 node bin/claude-router.mjs logs --tail 200
 ```
 
+### 从 GitHub 更新
+
+如果 router 以本地服务形式从 git checkout 运行（即 `~/.claude/model-router` 的扁平布局），一条命令即可完成：拉取 `main`、校验 checkout 与 `origin/main` 一致且 `package.json` 与 `src/version.mjs` 版本相同、运行离线测试、带备份部署运行文件、重启服务，并验证健康状态、`/version` 和一次路由预览。
+
+```bash
+claude-router update             # 或：node scripts/router-update.mjs
+claude-router update --dry-run   # 只显示将要部署的内容
+```
+
+如果 checkout 不在 `main` 上有未提交改动，它会拒绝执行；已是最新时直接提示且不改动任何文件；重启或验证失败会恢复之前的文件。Docker 安装则使用 `git pull` 后执行 `npm run compose:up`。
+
 可用端点：
 
 | 端点 | 用途 |

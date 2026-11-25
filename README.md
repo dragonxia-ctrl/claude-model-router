@@ -402,6 +402,17 @@ node bin/claude-router.mjs restart
 node bin/claude-router.mjs logs --tail 200
 ```
 
+### Updating from GitHub
+
+For an install that runs the router as a local service from a git checkout (the flattened `~/.claude/model-router` layout), one command pulls `main`, verifies that the checkout matches `origin/main` and that `package.json` and `src/version.mjs` agree, runs the offline tests, deploys the runtime files with a backup, restarts the service, and verifies health, `/version`, and a routing preview:
+
+```bash
+claude-router update             # or: node scripts/router-update.mjs
+claude-router update --dry-run   # show what would be deployed
+```
+
+It refuses a checkout that is not on `main` or has uncommitted changes, reports "already up to date" without touching anything, and restores the previous files if the restart or verification fails. Docker installs update with `git pull` followed by `npm run compose:up`.
+
 Useful endpoints:
 
 | Endpoint | Purpose |

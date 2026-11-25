@@ -133,7 +133,7 @@ v1 exposed no release identity at all: `/health` carried only an internal schema
 
 ## 6. Verification
 
-- **Test suite:** 68 tests pass (49 before this release). Six cover command classification, mid-turn recovery, and the log fields; thirteen cover the update checker, the `/version` endpoint, and the status line output. One existing test changed expectation because a clean window now probes mid-turn instead of waiting for the next user message.
+- **Test suite:** 76 tests pass (49 before this release). Six cover command classification, mid-turn recovery, and the log fields; ten cover the update checker and the `/version` endpoint; four cover the status line output; seven cover the updater. One existing test changed expectation because a clean window now probes mid-turn instead of waiting for the next user message.
 - **Live check** on the deployed instance, using the read-only preview endpoint: 25 read-only `echo && cat` commands → DeepSeek with `mutating=0`; 19 file writes → DeepSeek; 21 file writes → Kimi with source `evidence`; recent `route_decision` lines carry both keys and an `deescalationOutcome` field. `GET /version` answers `{"current":"1.2.0", …}`, and the configured status line command prints `router v1.2.0` (dimmed) and, against a fixture cache with a newer release, `router v1.2.0 · v1.3.0 available` (amber).
 - **Behaviour unchanged where it should be:** the 20-mutation rule still escalates real editing work, hard capabilities never de-escalate, and a failed probe still returns to Kimi with exponential backoff.
 
@@ -149,7 +149,7 @@ v1 exposed no release identity at all: `/health` carried only an internal schema
 
 ```sh
 node docs/versions/render-figures.mjs   # regenerate assets/*.svg from data/v1-v2.json
-npm test                                # 68 offline tests
+npm test                                # 76 offline tests
 ```
 
 The figures are generated from [`data/v1-v2.json`](data/v1-v2.json), which contains, per request: timestamp, provider under each engine, decision source, cumulative tool and mutating counts, and token usage — no prompts, commands, or identifiers.
