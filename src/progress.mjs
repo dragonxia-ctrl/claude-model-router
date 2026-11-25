@@ -3,7 +3,21 @@ import { createHash } from 'node:crypto';
 const READ_TOOLS = new Set(['Read', 'Grep', 'Glob', 'LS', 'WebFetch', 'WebSearch', 'TodoRead', 'NotebookRead']);
 const MUTATING_TOOLS = new Set(['Write', 'Edit', 'MultiEdit', 'NotebookEdit']);
 const VERIFY_COMMAND = /^(?:pytest|python3? -m pytest|npm (?:run )?test|pnpm (?:run )?test|yarn (?:run )?test|bun test|go test|cargo test|jest|vitest|rspec|mvn (?:\S+ )*test|gradle(?:w)? test|make test|ctest|ruff check|eslint|tsc(?: --noEmit)?|mypy|pyright)\b/i;
-const READ_COMMAND = /^(?:ls|pwd|cat|rg|grep|find|fd|head|tail|wc|stat|file|du|df|git (?:status|diff|log|show|branch|remote|rev-parse)|sed -n|awk|jq|which|type|env|printenv|cd)\b/i;
+const READ_COMMAND = /^(?:ls|pwd|cat|rg|grep|find|fd|head|tail|wc|stat|file|du|df|echo|printf|true|false|date|whoami|hostname|uname|test|sleep|git (?:status|diff|log|show|branch|remote|rev-parse)|sed -n|awk|jq|which|type|env|printenv|cd)\b/i;
+// Read-only API queries that still look like work (Kaggle, package inventories).
+const READ_QUERY = /^(?:kaggle\s+(?:kernels?|competitions?)\s+(?:status|list|files|leaderboard|submissions)|pip3?\s+(?:list|show|freeze)|npm\s+(?:ls|list))\b/i;
+// Inline Python can be scanned for write operations; a script file cannot.
+const PYTHON_HEADER = /^(?:cd\s+[^&;]+&&\s*)?(?:python3?(?:\.\d+)?)(?:\s+--?[A-Za-z][\w-]*)*\s+(?:(?:-\s*)*<<-?\s*['"]?[\w.-]+['"]?|-c\s*['"])/i;
+const PYTHON_WRITE = /(?:\.(?:write|write_text|write_bytes|to_csv|to_parquet|to_json|to_excel|to_pickle|savefig|unlink|mkdir|rename|remove|rmdir|dump)\s*\(|open\s*\([^)]*['"][wax+])|os\.(?:remove|unlink|rename|replace|makedirs|mkdir|rmdir|system|popen)|shutil\.|subprocess\.|pip3?\s+install/i;
+const SHELL_REDIRECT = /(?:^|\s)\d?>{1,2}\s*(?!&|\|)(?!\/dev\/null)\S/;
+
+function readOnlyInlinePython(text) {
+  const header = text.split('\n')[0].trim();
+  if (!PYTHON_HEADER.test(header)) return false;
+  if (PYTHON_WRITE.test(text)) return false;
+  if (SHELL_REDIRECT.test(header)) return false;
+  return true;
+}
 
 const signature = value => createHash('sha256').update(value).digest('hex');
 
@@ -14,9 +28,12 @@ function canonical(value) {
 }
 
 function commandKind(command) {
-  const parts = String(command || '').split(/&&|\|\||;/).map(part => part.trim()).filter(Boolean);
+  const text = String(command || '');
+  if (readOnlyInlinePython(text)) return 'read';
+  const parts = text.split(/&&|\|\||;/).map(part => part.trim()).filter(Boolean);
   if (parts.length && parts.some(part => VERIFY_COMMAND.test(part))) return 'verification';
-  if (parts.length && parts.every(part => READ_COMMAND.test(part) || /^cd\s/.test(part))) return 'read';
+  if (parts.length && parts.every(part => /^cd\s/.test(part)
+    || ((READ_COMMAND.test(part) || READ_QUERY.test(part)) && !SHELL_REDIRECT.test(part)))) return 'read';
   return 'mutating';
 }
 

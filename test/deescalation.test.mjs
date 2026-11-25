@@ -148,11 +148,15 @@ test('cumulative escalation failures do not block a clean recent recovery window
   assert.equal((await round(engine, messages)).decision.provider, 'kimi');
 
   for (let i = 0; i < 4; i += 1) append({ name: 'Read', input: { file_path: `recovered-${i}.js` } }, i + 4);
-  await round(engine, messages);
+  // A clean window is now also evaluated mid-turn, so the probe starts as soon
+  // as the four new tool calls are in — before the next user message arrives.
+  const early = await round(engine, messages);
+  assert.equal(early.decision.provider, 'deepseek');
+  assert.equal(early.decision.source, 'deescalation_probe');
   const result = await round(engine, followUp(messages));
   assert.equal(result.decision.stats.failedVerifications, 2, 'cumulative escalation evidence remains visible');
   assert.equal(result.decision.provider, 'deepseek');
-  assert.equal(result.decision.source, 'deescalation_probe');
+  assert.ok(['probe', 'deescalated'].includes(result.decision.source), result.decision.source);
 });
 
 test('maximum failed attempts keep the task on Kimi', async () => {

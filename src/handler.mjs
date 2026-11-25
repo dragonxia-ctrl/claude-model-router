@@ -102,6 +102,8 @@ export function createHandler(configSource, options = {}) {
         time: new Date().toISOString(), requestId, provider: provider.name,
         model: provider.model, reason: decision.reason, source: decision.source,
         stream: Boolean(body.stream), stats: decision.stats || null,
+        conversationKey: decision.conversationKey, taskKey: decision.taskKey,
+        deescalationOutcome: transition?.outcome || null,
       }));
       await forward({
         req, res, body, provider, requestId, telemetry, route,

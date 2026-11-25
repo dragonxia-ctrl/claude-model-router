@@ -16,6 +16,7 @@ function initialState(decision, settings) {
     attempts: 0,
     probeSuccesses: 0,
     recovered: false,
+    toolCallsAtCheck: decision.stats?.toolCalls ?? 0,
     at: Date.now(),
   };
 }
@@ -80,7 +81,16 @@ export function createDecisionEngine(getConfig, options = {}) {
       at: Date.now(),
     };
     const recovery = recoveryFor(decision, previous, body, settings);
-    const checkpoint = previous.lastUserIndex !== decision.lastUserIndex;
+    const toolCallsNow = decision.stats?.toolCalls || 0;
+    const toolCallsSinceCheck = toolCallsNow - (previous.toolCallsAtCheck || 0);
+    const newUser = previous.lastUserIndex !== decision.lastUserIndex;
+    // A long turn used to lock Kimi until the next user message. When the whole
+    // task is one hour-long turn, de-escalation is unreachable. Evaluate the
+    // same recovery window every `windowToolCalls` new tool calls instead.
+    const midTurn = previous.phase === 'kimi' && !newUser
+      && toolCallsSinceCheck >= settings.windowToolCalls
+      && previous.kimiRequests >= (previous.requiredKimiRequests ?? 0);
+    const checkpoint = newUser || midTurn;
     const entry = evaluateRecovery(recovery, settings);
     // During a half-open probe, too little tool activity is not itself a
     // relapse. New failures, repeated errors and failed verification are.
@@ -164,6 +174,9 @@ export function createDecisionEngine(getConfig, options = {}) {
       }
     }
 
+    // Every evaluated checkpoint (new user message or mid-turn window) resets
+    // the tool-call baseline, so a blocked window is retried 24 calls later.
+    if (checkpoint) state.toolCallsAtCheck = toolCallsNow;
     return { decision, state, transition };
   }
 

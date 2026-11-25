@@ -138,6 +138,44 @@ test('upstream probe failure is committed and exported as a de-escalation metric
   assert.match(metrics, /claude_router_deescalation_total\{outcome="probe_failed"\} 1/);
 });
 
+test('route_decision log carries audit keys and de-escalation outcome', async t => {
+  const calls = [];
+  const deepseek = await mockProvider('deepseek', calls);
+  const kimi = await mockProvider('kimi', calls);
+  const config = {
+    router: { token: 'local-test-token' },
+    providers: {
+      deepseek: { baseUrl: deepseek.url, model: 'deepseek-flash', apiKey: 'ds-secret' },
+      kimi: { baseUrl: kimi.url, model: 'kimi-k3.1-pro', apiKey: 'kimi-secret' },
+    },
+  };
+  const router = http.createServer(createHandler(config));
+  const port = await listen(router);
+  t.after(async () => { await close(router); await close(deepseek.server); await close(kimi.server); });
+
+  const lines = [];
+  const original = console.log;
+  console.log = (...args) => { lines.push(args.map(String).join(' ')); };
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/v1/messages`, {
+      method: 'POST',
+      headers: { authorization: 'Bearer local-test-token', 'content-type': 'application/json' },
+      body: JSON.stringify({ model: 'auto', metadata: { user_id: 'audit-test' }, messages: [{ role: 'user', content: '重构整个模块' }] }),
+    });
+    assert.equal(response.status, 200);
+  } finally {
+    console.log = original;
+  }
+
+  const decision = lines.map(line => { try { return JSON.parse(line); } catch { return null; } })
+    .find(entry => entry?.event === 'route_decision');
+  assert.ok(decision, 'route_decision line was logged');
+  assert.match(decision.conversationKey, /^[a-f0-9]{64}$/);
+  assert.match(decision.taskKey, /^[a-f0-9]{64}$/);
+  assert.equal(decision.deescalationOutcome, null);
+  assert.ok(decision.stats, 'tool statistics are logged alongside the decision');
+});
+
 test('preview is side-effect free and sticky routing avoids repeated triage', async t => {
   const calls = [];
   const deepseek = await mockProvider('deepseek', calls);
