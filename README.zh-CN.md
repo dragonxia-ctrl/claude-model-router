@@ -49,6 +49,7 @@ Claude Code 通常只为会话配置一个模型。但实际工作负载是混�
 - 对较长且未被规则归类的任务，可选调用 DeepSeek 进行低成本语义分流。分流关闭 thinking、只返回小型 JSON、结果有缓存；任何错误、超时或低置信度都安全回退到 DeepSeek。
 - 同一任务的 Kimi 粘性有上限：在工具循环内避免切换，但在检查点（新用户消息，或长回合内每 24 次新工具调用的中途复查）且近期执行已恢复时，会试探性降级到 DeepSeek；失败则回退并指数退避。
 - 跨供应商时清理不兼容的 thinking / redacted_thinking 内容块。
+- 在 Claude Code 原生状态栏显示当前 router 版本与最新发布版本；有更新时高亮提示（命令行可用 `claude-router version` 查看同样信息）。
 - 支持通过模型名或提示词中的 `[kimi]` / `[deepseek]` 显式指定供应商。
 
 **暂不支持：** OpenAI、Gemini、Groq、本地模型，以及 DeepSeek 与 Kimi 之外的任何供应商。新增供应商属于架构变更，而不是改一个配置项；请阅读 [CONTRIBUTING.md](CONTRIBUTING.md)。
@@ -410,6 +411,7 @@ node bin/claude-router.mjs logs --tail 200
 | `GET /health/live` | 无需鉴权的进程存活检查 |
 | `GET /health/ready` | 配置与供应商就绪状态；无可用供应商时返回 503 |
 | `GET /health/deep` | 鉴权后的被动诊断，不消耗供应商 token |
+| `GET /version` | 无需鉴权的当前版本、最新发布版本与更新可用状态 |
 | `GET /metrics` | 鉴权后的 Prometheus 请求、token、路由与恢复指标 |
 | `GET /metrics/json` | 鉴权后的 JSON 遥测快照 |
 | `GET /v1/models` | 向 Claude Code 暴露 `auto`、DeepSeek、Kimi |
@@ -429,6 +431,23 @@ node bin/claude-router.mjs logs --tail 200
 ```
 
 每个回合完成后，原生耗时页脚上方会显示 DeepSeek/Kimi 的 token 总量、比例和模型请求耗时；`/router-usage` 可查看详细拆分。该探针仅支持终端，不需要供应商 key。
+
+### 在 Claude Code 中显示版本
+
+`GET /version` 返回当前运行的版本与最新发布版本；router 会在启动时（之后至多每 6 小时一次）把同样的状态写入 `~/.claude/model-router/version-cache.json`，离线时静默跳过。
+
+要在 Claude Code 里看到它，使用原生状态栏（也就是 Claude Code 自己显示版本和升级提示的位置）。在 `~/.claude/settings.json` 中加入以下配置并重启 Claude Code：
+
+```json
+"statusLine": {
+  "type": "command",
+  "command": "node \"$HOME/.claude/model-router/version-status.mjs\""
+}
+```
+
+（`version-status.mjs` 对应仓库中的 `scripts/version-status.mjs`；手动部署时把它复制到数据目录。）
+
+状态栏会以暗色显示 `router v1.2.0 · latest v1.2.0`；一旦有新版本，就以琥珀色显示 `router v1.2.0 · v1.3.0 available`。该脚本只读取本地缓存文件：不访问网络、不消耗供应商 token；router 从未上报版本时不输出任何内容。
 
 ---
 

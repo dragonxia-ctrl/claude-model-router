@@ -4,14 +4,14 @@ This page is the version area for **claude-model-router**. The [README](README.m
 
 | Version | Date | Status | Notes |
 |---|---|---|---|
-| **v2 — 1.2.0** | 2026-11-25 | **current** | Routing fixes: read-only commands are no longer counted as mutations; de-escalation can run mid-turn; audit fields in the route log. [Full report →](docs/versions/v1-to-v2.md) |
+| **v2 — 1.2.0** | 2026-11-25 | **current** | Routing fixes: read-only commands are no longer counted as mutations; de-escalation can run mid-turn; audit fields in the route log. Also adds version/update visibility in the Claude Code status line. [Full report →](docs/versions/v1-to-v2.md) |
 | v1 — 1.1.0 | 2026-11-25 | previous | Observability and bounded de-escalation. [Release commit](https://github.com/dragonxia-ctrl/claude-model-router/commit/88491f1) |
 
 ---
 
 ## v1 → v2 at a glance
 
-The single table to read if you only read one thing. "Kimi share" is measured on the same real 63-request task, replayed through both engines (see [the report](docs/versions/v1-to-v2.md#method)).
+The single table to read if you only read one thing. "Kimi share" is measured on the same real 63-request task, replayed through both engines (see [the report](docs/versions/v1-to-v2.md#4-evidence)).
 
 | | **v1 (1.1.0)** | **v2 (1.2.0)** |
 |---|---|---|
@@ -22,7 +22,8 @@ The single table to read if you only read one thing. "Kimi share" is measured on
 | **Kimi share of the measured task — tokens** | 86.5% | **49.2%** |
 | **Kimi share with `routing.limits.mutatingCalls: 40`** | — | **3.2%** of requests / 3.9% of tokens |
 | **First escalation in that task** | 10:47 (21 “mutating” calls, mostly reads) | 11:16 (20 real writes) |
-| **Tests** | 49 | **55** (6 added) |
+| **Version visibility in Claude Code** | None; `/health` exposed only an internal schema number | Native status line `router v1.2.0 · latest v…` (amber when an update exists), `GET /version`, `claude-router version` (`src/version.mjs`, `scripts/version-status.mjs`) |
+| **Tests** | 49 | **68** (19 added) |
 
 Both versions share the same defaults and safety model: DeepSeek is the default; Kimi needs evidence, progress signals, or a confident semantic triage; video/visual capabilities never de-escalate; a failed probe returns to Kimi with exponential backoff.
 
@@ -40,6 +41,8 @@ Both versions share the same defaults and safety model: DeepSeek is the default;
 **Evidence.** Replaying the real request stream through the old engine reproduces the logged decisions 63/63; the fixed engine moves Kimi from 82.5% to 42.9% of requests (86.5% → 49.2% of tokens). Command classification drops from 83 to 43 “mutating” calls on that task. Figures and full tables: **[docs/versions/v1-to-v2.md](docs/versions/v1-to-v2.md)**.
 
 **Fix.** Read-only command detection in `src/progress.mjs`; mid-turn recovery checkpoints in `src/decision-engine.mjs`; audit fields in `src/handler.mjs`. Six regression tests added; one existing test updated because a clean window now probes before the next user message.
+
+**Also added.** Version visibility: the router reports its running release and the latest published release on `GET /version`, caches the update check locally (startup, then at most every six hours, silent when offline), and `scripts/version-status.mjs` renders it in Claude Code's native status line — dimmed while up to date, amber when an upgrade exists. `claude-router version` shows the same state outside Claude Code. Thirteen tests cover the update checker, the endpoint, and the status line output.
 
 ---
 

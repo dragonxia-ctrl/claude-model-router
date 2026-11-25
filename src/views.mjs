@@ -1,7 +1,10 @@
+import { ROUTER_VERSION } from './version.mjs';
+
 export function health(config) {
   return {
     ok: true,
     version: 2,
+    release: ROUTER_VERSION,
     revision: config.revision || 1,
     strategy: 'DeepSeek default; evidence, progress, and optional semantic escalation to Kimi',
     progressAware: true,

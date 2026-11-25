@@ -327,6 +327,26 @@ async function verifyCommand(flags, live = false) {
   return 0;
 }
 
+async function versionCommand(flags) {
+  if (flags.json) console.log(JSON.stringify({ cli: PACKAGE_VERSION }, null, 2));
+  else console.log(`CLI: ${PACKAGE_VERSION}`);
+  const { config } = loadRuntimeConfig(flags);
+  const port = config.router.port;
+  const response = await fetch(`http://127.0.0.1:${port}/version`, { signal: AbortSignal.timeout(4000) });
+  const info = await response.json();
+  if (flags.json) console.log(JSON.stringify(info, null, 2));
+  else {
+    const status = info.status === 'available' ? `update available: ${info.latest}`
+      : info.status === 'ahead' ? 'ahead of the latest release'
+        : info.status === 'current' ? 'up to date' : 'latest release unknown';
+    console.log(`Running: ${info.current}`);
+    console.log(`Latest: ${info.latest || 'unknown'}`);
+    console.log(`Status: ${status}`);
+    console.log(`Last checked: ${info.checkedAt || 'never'}`);
+  }
+  return 0;
+}
+
 function help() {
   console.log(`Claude Model Router ${PACKAGE_VERSION}
 
@@ -341,6 +361,7 @@ Commands:
   configure        Update provider API keys and restart the container
   token-helper     Generate only the local token helper; do not change settings
   status           Show router health
+  version          Show CLI and running router version plus the latest release
   doctor           Check Node, config, settings, helper, Docker, and router health
   deploy           Build and start the Docker container
   restart          Restart the Docker container
@@ -386,7 +407,7 @@ async function main() {
     case 'test': return testCommand();
     case 'verify': return verifyCommand(flags, false);
     case 'verify-live': return verifyCommand(flags, true);
-    case 'version': console.log(PACKAGE_VERSION); return 0;
+    case 'version': return versionCommand(flags);
     default:
       help();
       return 2;

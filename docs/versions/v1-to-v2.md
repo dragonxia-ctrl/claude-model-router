@@ -127,10 +127,14 @@ Before comparing engines, the replay must reproduce what actually happened. The 
 
 A blocked recovery window is retried after another 24 tool calls. Hard capabilities (video, complex visual reasoning) still never probe. The default provider and every other rule are unchanged.
 
+### 5.1 Also in v2: version visibility
+
+v1 exposed no release identity at all: `/health` carried only an internal schema number, so there was no way to ask "which router am I running, and is it current?". v2 adds `src/version.mjs` (running release plus a cached GitHub release check), `GET /version`, a `release` field on `/health`, `claude-router version`, and `scripts/version-status.mjs`, which renders `router v1.2.0 · latest v1.2.0` in Claude Code's native status line and turns amber with `router v1.2.0 · v1.3.0 available` when a newer release exists. The status line helper reads only the local cache file; the update check is one unauthenticated GitHub read at startup and at most every six hours, silent when offline. Version visibility deliberately does not use the usage-probe mod: mod hooks run in a sandbox without `fetch`, `process`, or filesystem access.
+
 ## 6. Verification
 
-- **Test suite:** 55 tests pass (49 before this release). Six were added: five for command classification and mid-turn recovery, one for the log fields. One existing test changed expectation because a clean window now probes mid-turn instead of waiting for the next user message.
-- **Live check** on the deployed instance, using the read-only preview endpoint: 25 read-only `echo && cat` commands → DeepSeek with `mutating=0`; 19 file writes → DeepSeek; 21 file writes → Kimi with source `evidence`; recent `route_decision` lines carry both keys and an `deescalationOutcome` field.
+- **Test suite:** 68 tests pass (49 before this release). Six cover command classification, mid-turn recovery, and the log fields; thirteen cover the update checker, the `/version` endpoint, and the status line output. One existing test changed expectation because a clean window now probes mid-turn instead of waiting for the next user message.
+- **Live check** on the deployed instance, using the read-only preview endpoint: 25 read-only `echo && cat` commands → DeepSeek with `mutating=0`; 19 file writes → DeepSeek; 21 file writes → Kimi with source `evidence`; recent `route_decision` lines carry both keys and an `deescalationOutcome` field. `GET /version` answers `{"current":"1.2.0", …}`, and the configured status line command prints `router v1.2.0` (dimmed) and, against a fixture cache with a newer release, `router v1.2.0 · v1.3.0 available` (amber).
 - **Behaviour unchanged where it should be:** the 20-mutation rule still escalates real editing work, hard capabilities never de-escalate, and a failed probe still returns to Kimi with exponential backoff.
 
 ## 7. Threats to validity
@@ -145,7 +149,7 @@ A blocked recovery window is retried after another 24 tool calls. Hard capabilit
 
 ```sh
 node docs/versions/render-figures.mjs   # regenerate assets/*.svg from data/v1-v2.json
-npm test                                # 55 offline tests
+npm test                                # 68 offline tests
 ```
 
 The figures are generated from [`data/v1-v2.json`](data/v1-v2.json), which contains, per request: timestamp, provider under each engine, decision source, cumulative tool and mutating counts, and token usage — no prompts, commands, or identifiers.

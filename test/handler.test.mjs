@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import { createHandler } from '../src/handler.mjs';
+import { ROUTER_VERSION } from '../src/version.mjs';
 
 const listen = server => new Promise(resolve => {
   server.listen(0, '127.0.0.1', () => resolve(server.address().port));
@@ -222,4 +223,41 @@ test('preview is side-effect free and sticky routing avoids repeated triage', as
   assert.equal(response.headers.get('x-router-source'), 'sticky');
   assert.equal((await response.json()).provider, 'kimi');
   assert.equal(triageCalls, 1, 'preview result is cached; sticky follow-up does not re-triage');
+});
+
+test('version endpoint reports the running release and update state without auth', async t => {
+  const config = { router: { token: 'local-test-token' }, providers: {} };
+  const info = {
+    current: ROUTER_VERSION,
+    latest: '1.3.0',
+    status: 'available',
+    updateAvailable: true,
+    checkedAt: '2026-11-25T00:00:00.000Z',
+    repository: 'dragonxia-ctrl/claude-model-router',
+  };
+  let refreshes = 0;
+  const updateChecker = { info: () => info, refresh: async () => { refreshes += 1; return info; } };
+  const router = http.createServer(createHandler(config, { updateChecker }));
+  const port = await listen(router);
+  t.after(async () => { await close(router); });
+
+  let response = await fetch(`http://127.0.0.1:${port}/version`);
+  assert.equal(response.status, 200);
+  let body = await response.json();
+  assert.equal(body.current, ROUTER_VERSION);
+  assert.equal(body.latest, '1.3.0');
+  assert.equal(body.updateAvailable, true);
+  assert.equal(refreshes, 1, 'reading the endpoint asks the checker to refresh in the background');
+
+  response = await fetch(`http://127.0.0.1:${port}/health`);
+  body = await response.json();
+  assert.equal(body.release, ROUTER_VERSION);
+
+  const plain = http.createServer(createHandler(config));
+  const plainPort = await listen(plain);
+  t.after(async () => { await close(plain); });
+  body = await (await fetch(`http://127.0.0.1:${plainPort}/version`)).json();
+  assert.equal(body.current, ROUTER_VERSION);
+  assert.equal(body.latest, null);
+  assert.equal(body.status, 'unknown');
 });

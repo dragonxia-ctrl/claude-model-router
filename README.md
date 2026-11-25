@@ -410,6 +410,7 @@ Useful endpoints:
 | `GET /health/live` | Unauthenticated process liveness |
 | `GET /health/ready` | Configuration/provider readiness; 503 when no provider is configured |
 | `GET /health/deep` | Authenticated passive diagnostics; never spends provider tokens |
+| `GET /version` | Unauthenticated running release, latest published release, and update availability |
 | `GET /metrics` | Authenticated Prometheus request, token, routing, and recovery metrics |
 | `GET /metrics/json` | Authenticated JSON telemetry snapshot |
 | `GET /v1/models` | Claude Code model listing (`auto`, DeepSeek, Kimi) |
@@ -429,6 +430,23 @@ Install the bundled terminal mod from the repository marketplace, then restart C
 ```
 
 After each completed turn it shows DeepSeek/Kimi token totals, token ratios, and model-request time immediately above the native turn-duration footer. `/router-usage` shows the detailed breakdown. The probe is terminal-only and does not need provider keys.
+
+### Version display in Claude Code
+
+`GET /version` reports the running release and the latest published release, and the router writes the same state to `~/.claude/model-router/version-cache.json` at startup and at most every six hours (offline checks are silent).
+
+To see it inside Claude Code in the native status line — the same place Claude Code shows its own version and upgrade notices — add this to `~/.claude/settings.json` and restart Claude Code:
+
+```json
+"statusLine": {
+  "type": "command",
+  "command": "node \"$HOME/.claude/model-router/version-status.mjs\""
+}
+```
+
+(`version-status.mjs` is `scripts/version-status.mjs` in this repository; copy it into the data directory for a manual install.)
+
+The status line then shows `router v1.2.0 · latest v1.2.0` dimmed, and switches to an amber `router v1.2.0 · v1.3.0 available` when a newer release exists. The helper only reads the local cache file: no network access, no provider tokens, and no output when the router has never reported a version. Outside Claude Code, `claude-router version` prints the same information.
 
 ---
 
