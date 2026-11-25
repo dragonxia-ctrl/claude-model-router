@@ -1,10 +1,11 @@
 import os from 'node:os';
 import path from 'node:path';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 export const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const COMPOSE_FILE = path.join(REPO_ROOT, 'compose.yaml');
-export const PACKAGE_VERSION = '1.0.0';
+export const PACKAGE_VERSION = JSON.parse(readFileSync(path.join(REPO_ROOT, 'package.json'), 'utf8')).version;
 
 export function expandHome(value) {
   if (!value) return value;

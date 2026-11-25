@@ -4,11 +4,13 @@ import { forward } from './upstream.mjs';
 import { authorized, json, error, readJson } from './http-utils.mjs';
 import { health, models } from './views.mjs';
 import { liveHealth, readinessHealth, deepHealth } from './health.mjs';
+import { ROUTER_VERSION } from './version.mjs';
 import { createDecisionEngine } from './decision-engine.mjs';
 import { createTelemetry } from './telemetry.mjs';
 
 export function createHandler(configSource, options = {}) {
   const getConfig = typeof configSource === 'function' ? configSource : () => configSource;
+  const updateChecker = options.updateChecker || null;
   const telemetry = options.telemetry && typeof options.telemetry.recordRequest === 'function'
     ? options.telemetry
     : options.telemetry === false ? null : createTelemetry({
@@ -39,6 +41,22 @@ export function createHandler(configSource, options = {}) {
       const pathname = url.pathname;
       if (req.method === 'GET' && pathname === '/health') { json(res, 200, health(getConfig())); return; }
       if (req.method === 'GET' && pathname === '/health/live') { json(res, 200, liveHealth()); return; }
+      if (req.method === 'GET' && pathname === '/version') {
+        if (updateChecker) {
+          void updateChecker.refresh().catch(() => {});
+          json(res, 200, updateChecker.info());
+        } else {
+          json(res, 200, {
+            current: ROUTER_VERSION,
+            latest: null,
+            status: 'unknown',
+            updateAvailable: false,
+            checkedAt: null,
+            repository: 'dragonxia-ctrl/claude-model-router',
+          });
+        }
+        return;
+      }
       if (req.method === 'GET' && pathname === '/health/ready') {
         const report = readinessHealth(getConfig());
         json(res, report.ok ? 200 : 503, report);
@@ -102,6 +120,8 @@ export function createHandler(configSource, options = {}) {
         time: new Date().toISOString(), requestId, provider: provider.name,
         model: provider.model, reason: decision.reason, source: decision.source,
         stream: Boolean(body.stream), stats: decision.stats || null,
+        conversationKey: decision.conversationKey, taskKey: decision.taskKey,
+        deescalationOutcome: transition?.outcome || null,
       }));
       await forward({
         req, res, body, provider, requestId, telemetry, route,

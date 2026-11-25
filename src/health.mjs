@@ -1,6 +1,8 @@
-const STARTED_AT = Date.now();
+import { ROUTER_VERSION } from './version.mjs';
 
-export const ROUTER_VERSION = '1.1.0';
+export { ROUTER_VERSION };
+
+const STARTED_AT = Date.now();
 
 export function liveHealth() {
   return {

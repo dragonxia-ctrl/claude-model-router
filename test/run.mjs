@@ -1,6 +1,9 @@
 import './classifier.test.mjs';
 import './progress.test.mjs';
 import './decision-engine.test.mjs';
+import './routing-fixes.test.mjs';
+import './version.test.mjs';
+import './version-status.test.mjs';
 import './deescalation.test.mjs';
 import './config-store.test.mjs';
 import './handler.test.mjs';

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import { createHandler } from '../src/handler.mjs';
+import { ROUTER_VERSION } from '../src/version.mjs';
 
 const listen = server => new Promise(resolve => {
   server.listen(0, '127.0.0.1', () => resolve(server.address().port));
@@ -138,6 +139,44 @@ test('upstream probe failure is committed and exported as a de-escalation metric
   assert.match(metrics, /claude_router_deescalation_total\{outcome="probe_failed"\} 1/);
 });
 
+test('route_decision log carries audit keys and de-escalation outcome', async t => {
+  const calls = [];
+  const deepseek = await mockProvider('deepseek', calls);
+  const kimi = await mockProvider('kimi', calls);
+  const config = {
+    router: { token: 'local-test-token' },
+    providers: {
+      deepseek: { baseUrl: deepseek.url, model: 'deepseek-flash', apiKey: 'ds-secret' },
+      kimi: { baseUrl: kimi.url, model: 'kimi-k3.1-pro', apiKey: 'kimi-secret' },
+    },
+  };
+  const router = http.createServer(createHandler(config));
+  const port = await listen(router);
+  t.after(async () => { await close(router); await close(deepseek.server); await close(kimi.server); });
+
+  const lines = [];
+  const original = console.log;
+  console.log = (...args) => { lines.push(args.map(String).join(' ')); };
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/v1/messages`, {
+      method: 'POST',
+      headers: { authorization: 'Bearer local-test-token', 'content-type': 'application/json' },
+      body: JSON.stringify({ model: 'auto', metadata: { user_id: 'audit-test' }, messages: [{ role: 'user', content: '重构整个模块' }] }),
+    });
+    assert.equal(response.status, 200);
+  } finally {
+    console.log = original;
+  }
+
+  const decision = lines.map(line => { try { return JSON.parse(line); } catch { return null; } })
+    .find(entry => entry?.event === 'route_decision');
+  assert.ok(decision, 'route_decision line was logged');
+  assert.match(decision.conversationKey, /^[a-f0-9]{64}$/);
+  assert.match(decision.taskKey, /^[a-f0-9]{64}$/);
+  assert.equal(decision.deescalationOutcome, null);
+  assert.ok(decision.stats, 'tool statistics are logged alongside the decision');
+});
+
 test('preview is side-effect free and sticky routing avoids repeated triage', async t => {
   const calls = [];
   const deepseek = await mockProvider('deepseek', calls);
@@ -184,4 +223,41 @@ test('preview is side-effect free and sticky routing avoids repeated triage', as
   assert.equal(response.headers.get('x-router-source'), 'sticky');
   assert.equal((await response.json()).provider, 'kimi');
   assert.equal(triageCalls, 1, 'preview result is cached; sticky follow-up does not re-triage');
+});
+
+test('version endpoint reports the running release and update state without auth', async t => {
+  const config = { router: { token: 'local-test-token' }, providers: {} };
+  const info = {
+    current: ROUTER_VERSION,
+    latest: '1.3.0',
+    status: 'available',
+    updateAvailable: true,
+    checkedAt: '2026-11-25T00:00:00.000Z',
+    repository: 'dragonxia-ctrl/claude-model-router',
+  };
+  let refreshes = 0;
+  const updateChecker = { info: () => info, refresh: async () => { refreshes += 1; return info; } };
+  const router = http.createServer(createHandler(config, { updateChecker }));
+  const port = await listen(router);
+  t.after(async () => { await close(router); });
+
+  let response = await fetch(`http://127.0.0.1:${port}/version`);
+  assert.equal(response.status, 200);
+  let body = await response.json();
+  assert.equal(body.current, ROUTER_VERSION);
+  assert.equal(body.latest, '1.3.0');
+  assert.equal(body.updateAvailable, true);
+  assert.equal(refreshes, 1, 'reading the endpoint asks the checker to refresh in the background');
+
+  response = await fetch(`http://127.0.0.1:${port}/health`);
+  body = await response.json();
+  assert.equal(body.release, ROUTER_VERSION);
+
+  const plain = http.createServer(createHandler(config));
+  const plainPort = await listen(plain);
+  t.after(async () => { await close(plain); });
+  body = await (await fetch(`http://127.0.0.1:${plainPort}/version`)).json();
+  assert.equal(body.current, ROUTER_VERSION);
+  assert.equal(body.latest, null);
+  assert.equal(body.status, 'unknown');
 });

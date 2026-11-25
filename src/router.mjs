@@ -4,6 +4,7 @@ import path from 'node:path';
 import { createConfigStore } from './config-store.mjs';
 import { createHandler } from './handler.mjs';
 import { createTelemetry } from './telemetry.mjs';
+import { createUpdateChecker, ROUTER_VERSION } from './version.mjs';
 
 function defaultConfigPath() {
   return path.join(os.homedir(), '.claude', 'model-router', 'config.json');
@@ -21,7 +22,14 @@ const telemetry = createTelemetry({
   retentionDays: initial.telemetry?.retentionDays || 30,
   maxFileBytes: initial.telemetry?.maxFileBytes || 32 * 1024 * 1024,
 });
-const handler = createHandler(() => store.get(), { telemetry });
+const updateChecker = createUpdateChecker({
+  cachePath: process.env.CLAUDE_ROUTER_VERSION_CACHE || path.join(path.dirname(configPath), 'version-cache.json'),
+  logger: (event, error) => console.error(JSON.stringify({
+    event,
+    message: error?.message || String(error),
+  })),
+});
+const handler = createHandler(() => store.get(), { telemetry, updateChecker });
 const server = http.createServer(handler);
 server.on('clientError', (error, socket) => {
   console.error(JSON.stringify({ event: 'client_error', message: error.message }));
@@ -36,7 +44,16 @@ server.listen(port, host, () => {
     config: configPath,
     revision: store.revision,
     telemetryPersistence: telemetry.settings.persist,
+    release: ROUTER_VERSION,
   }));
+  void updateChecker.refresh().then(info => {
+    console.log(JSON.stringify({
+      event: 'version_check',
+      current: info.current,
+      latest: info.latest,
+      status: info.status,
+    }));
+  }).catch(() => {});
 });
 if (process.platform !== 'win32') {
   process.on('SIGHUP', () => {

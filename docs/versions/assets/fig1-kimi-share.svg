@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="380" viewBox="0 0 880 380" role="img" aria-labelledby="t d">
+<title id="t">Kimi share of the task, v1 vs v2</title><desc id="d">Grouped columns: share of the 63 requests and of all tokens served by Kimi on the same real task.</desc>
+<rect x="0.5" y="0.5" width="879" height="379" rx="8" fill="#fcfcfb" stroke="#e6e5e0"/>
+<style>
+text { font-family: 'Inter','ui-sans-serif','-apple-system','Segoe UI',Roboto,Helvetica,Arial,sans-serif; }
+.t { font-size: 15px; font-weight: 600; fill: #0b0b0b; }
+.s { font-size: 12px; fill: #52514e; }
+.a { font-size: 11px; fill: #52514e; font-variant-numeric: tabular-nums; }
+.v { font-size: 11px; font-weight: 600; fill: #0b0b0b; font-variant-numeric: tabular-nums; }
+.l { font-size: 12px; fill: #52514e; }
+</style>
+<text class="t" x="32" y="32">Kimi share of the task, before and after</text>
+<text class="s" x="32" y="52">63 real requests · NTL/CASMI submission task · 2026-11-25</text>
+<rect x="32" y="68" width="10" height="10" rx="2" fill="#eb6834"/>
+<text class="l" x="48" y="77">v1</text>
+<rect x="83.2" y="68" width="10" height="10" rx="2" fill="#2a78d6"/>
+<text class="l" x="99.2" y="77">v2 · threshold 20</text>
+<rect x="233.39999999999998" y="68" width="10" height="10" rx="2" fill="#1baf7a"/>
+<text class="l" x="249.39999999999998" y="77">v2 · threshold 40</text>
+<line x1="76" y1="292" x2="828" y2="292" stroke="#e9e8e3" stroke-width="1"/>
+<text class="a" x="66" y="296" text-anchor="end">0%</text>
+<line x1="76" y1="246.5" x2="828" y2="246.5" stroke="#e9e8e3" stroke-width="1"/>
+<text class="a" x="66" y="250.5" text-anchor="end">25%</text>
+<line x1="76" y1="201" x2="828" y2="201" stroke="#e9e8e3" stroke-width="1"/>
+<text class="a" x="66" y="205" text-anchor="end">50%</text>
+<line x1="76" y1="155.5" x2="828" y2="155.5" stroke="#e9e8e3" stroke-width="1"/>
+<text class="a" x="66" y="159.5" text-anchor="end">75%</text>
+<line x1="76" y1="110" x2="828" y2="110" stroke="#e9e8e3" stroke-width="1"/>
+<text class="a" x="66" y="114" text-anchor="end">100%</text>
+<path d="M250,292 L250,145.85 Q250,141.85 254,141.85 L292,141.85 Q296,141.85 296,145.85 L296,292 Z" fill="#eb6834"/>
+<text class="v" x="273" y="133.85" text-anchor="middle">82.5%</text>
+<path d="M298,292 L298,217.922 Q298,213.922 302,213.922 L340,213.922 Q344,213.922 344,217.922 L344,292 Z" fill="#2a78d6"/>
+<text class="v" x="321" y="205.922" text-anchor="middle">42.9%</text>
+<path d="M346,292 L346,290.176 Q346,286.176 350,286.176 L388,286.176 Q392,286.176 392,290.176 L392,292 Z" fill="#1baf7a"/>
+<text class="v" x="369" y="278.176" text-anchor="middle">3.2%</text>
+<text class="a" x="321" y="314" text-anchor="middle">Share of requests</text>
+<path d="M512,292 L512,138.57 Q512,134.57 516,134.57 L554,134.57 Q558,134.57 558,138.57 L558,292 Z" fill="#eb6834"/>
+<text class="v" x="535" y="126.57" text-anchor="middle">86.5%</text>
+<path d="M560,292 L560,206.456 Q560,202.456 564,202.456 L602,202.456 Q606,202.456 606,206.456 L606,292 Z" fill="#2a78d6"/>
+<text class="v" x="583" y="194.456" text-anchor="middle">49.2%</text>
+<path d="M608,292 L608,288.902 Q608,284.902 612,284.902 L650,284.902 Q654,284.902 654,288.902 L654,292 Z" fill="#1baf7a"/>
+<text class="v" x="631" y="276.902" text-anchor="middle">3.9%</text>
+<text class="a" x="583" y="314" text-anchor="middle">Share of tokens</text>
+</svg>

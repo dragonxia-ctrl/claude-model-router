@@ -44,7 +44,7 @@ Deterministic rules also inspect tool history after the selected task. Default t
 | Mutating tool calls | 20 |
 | Same mutating invocation repeated | 3 |
 
-Read-only exploration does not increment the mutating-call threshold. A failed test only counts as failed verification after at least one successful mutation, reducing escalation for a suite that was already red before any edits.
+Read-only exploration does not increment the mutating-call threshold. Since v1.2.0 this also covers `echo`/`printf` chains, read-only CLI queries (`kaggle … status|list|files|leaderboard|submissions`, `pip list|show`), and inline Python whose source contains no write operation; script files and any write marker still count as mutations. A failed test only counts as failed verification after at least one successful mutation, reducing escalation for a suite that was already red before any edits.
 
 Thresholds can be overridden under `routing.limits` using the keys in `src/progress.mjs`. Changes require regression tests.
 
@@ -67,13 +67,13 @@ Kimi is sticky **within a tool-use loop**, but not for the lifetime of a task. P
 
 ```text
 DeepSeek -- evidence of Kimi advantage --> Kimi
-Kimi -- minimum residency + clean window + new human checkpoint --> DeepSeek probe
+Kimi -- minimum residency + clean window + recovery checkpoint --> DeepSeek probe
 DeepSeek probe -- required successful requests --> recovered DeepSeek
 DeepSeek probe -- upstream failure or new tool failures --> Kimi + exponential backoff
 Recovered DeepSeek -- new failures/hard capability --> Kimi
 ```
 
-A checkpoint is a new human text message. Tool-result-only `user` messages do not create checkpoints, so the default policy does not switch providers in the middle of an autonomous tool-use turn. Preview and token-count requests never advance routing state.
+A checkpoint is either a new human text message or a **mid-turn review**: while a task is on Kimi, the same recovery window is evaluated after every `windowToolCalls` (24) new tool calls, provided the request-based residency has been served. Tool-result-only `user` messages still do not create checkpoints by themselves; the mid-turn review is what lets a single long turn leave Kimi once its execution has recovered. A blocked review is retried after another `windowToolCalls` calls. Preview and token-count requests never advance routing state.
 
 ### Probe entry requirements
 
@@ -83,7 +83,7 @@ All applicable conditions must hold:
 - the task has no hard Kimi-only capability requirement (currently video or complex visual reasoning);
 - the configured number of actual Kimi requests has completed;
 - failed-probe attempts remain below `maxAttempts`;
-- the latest human message is a new checkpoint;
+- a checkpoint occurred: a new human message, or `windowToolCalls` new tool calls since the last review;
 - the recent recovery window is clean.
 
 A clean window has no failed verification, repeated normalized error group, trailing tool failure, or excessive repeated mutation; its failure rate is within budget. If recent edits have verification attempts, at least one must succeed. When tools are present, `minRecentToolCalls` requires enough recent evidence; a conversation with no tool calls can still recover after the request-based residency requirement.

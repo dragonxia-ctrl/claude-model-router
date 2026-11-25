@@ -1,0 +1,2100 @@
+{
+ "generatedAt": "2026-11-25T13:22:38.918Z",
+ "experiment": "v1 vs v2 routing on a real 63-request task (2026-11-25)",
+ "taskWindow": {
+  "from": "2026-11-25T10:45:24.196Z",
+  "to": "2026-11-25T11:30:34.065Z"
+ },
+ "before": {
+  "limit": 20,
+  "requests": 63,
+  "kimiRequests": 52,
+  "requestShare": 82.5,
+  "tokenShare": 86.5,
+  "rows": [
+   {
+    "at": "2026-11-25T10:45:24.196Z",
+    "provider": "deepseek",
+    "source": "default",
+    "toolCalls": 0,
+    "mutatingCalls": 0,
+    "tokens": 120372
+   },
+   {
+    "at": "2026-11-25T10:45:32.173Z",
+    "provider": "deepseek",
+    "source": "default",
+    "toolCalls": 2,
+    "mutatingCalls": 2,
+    "tokens": 121957
+   },
+   {
+    "at": "2026-11-25T10:45:47.864Z",
+    "provider": "deepseek",
+    "source": "default",
+    "toolCalls": 4,
+    "mutatingCalls": 4,
+    "tokens": 123449
+   },
+   {
+    "at": "2026-11-25T10:46:00.111Z",
+    "provider": "deepseek",
+    "source": "default",
+    "toolCalls": 6,
+    "mutatingCalls": 6,
+    "tokens": 125253
+   },
+   {
+    "at": "2026-11-25T10:46:07.864Z",
+    "provider": "deepseek",
+    "source": "default",
+    "toolCalls": 8,
+    "mutatingCalls": 8,
+    "tokens": 129761
+   },
+   {
+    "at": "2026-11-25T10:46:19.185Z",
+    "provider": "deepseek",
+    "source": "default",
+    "toolCalls": 10,
+    "mutatingCalls": 10,
+    "tokens": 130033
+   },
+   {
+    "at": "2026-11-25T10:46:22.491Z",
+    "provider": "deepseek",
+    "source": "default",
+    "toolCalls": 11,
+    "mutatingCalls": 11,
+    "tokens": 130798
+   },
+   {
+    "at": "2026-11-25T10:46:33.484Z",
+    "provider": "deepseek",
+    "source": "default",
+    "toolCalls": 13,
+    "mutatingCalls": 13,
+    "tokens": 135285
+   },
+   {
+    "at": "2026-11-25T10:46:51.995Z",
+    "provider": "deepseek",
+    "source": "default",
+    "toolCalls": 15,
+    "mutatingCalls": 15,
+    "tokens": 137726
+   },
+   {
+    "at": "2026-11-25T10:47:16.022Z",
+    "provider": "deepseek",
+    "source": "default",
+    "toolCalls": 17,
+    "mutatingCalls": 17,
+    "tokens": 140620
+   },
+   {
+    "at": "2026-11-25T10:47:34.275Z",
+    "provider": "deepseek",
+    "source": "default",
+    "toolCalls": 19,
+    "mutatingCalls": 19,
+    "tokens": 146772
+   },
+   {
+    "at": "2026-11-25T10:47:51.617Z",
+    "provider": "kimi",
+    "source": "evidence",
+    "toolCalls": 21,
+    "mutatingCalls": 21,
+    "tokens": 0
+   },
+   {
+    "at": "2026-11-25T11:02:50.839Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 21,
+    "mutatingCalls": 21,
+    "tokens": 145687
+   },
+   {
+    "at": "2026-11-25T11:03:52.125Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 23,
+    "mutatingCalls": 23,
+    "tokens": 147056
+   },
+   {
+    "at": "2026-11-25T11:04:36.592Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 25,
+    "mutatingCalls": 25,
+    "tokens": 148525
+   },
+   {
+    "at": "2026-11-25T11:05:17.487Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 27,
+    "mutatingCalls": 27,
+    "tokens": 151169
+   },
+   {
+    "at": "2026-11-25T11:05:58.496Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 29,
+    "mutatingCalls": 29,
+    "tokens": 152407
+   },
+   {
+    "at": "2026-11-25T11:06:11.879Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 30,
+    "mutatingCalls": 30,
+    "tokens": 153609
+   },
+   {
+    "at": "2026-11-25T11:06:27.627Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 31,
+    "mutatingCalls": 31,
+    "tokens": 153842
+   },
+   {
+    "at": "2026-11-25T11:06:40.895Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 32,
+    "mutatingCalls": 32,
+    "tokens": 154979
+   },
+   {
+    "at": "2026-11-25T11:06:58.351Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 33,
+    "mutatingCalls": 33,
+    "tokens": 157301
+   },
+   {
+    "at": "2026-11-25T11:08:02.713Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 35,
+    "mutatingCalls": 35,
+    "tokens": 161597
+   },
+   {
+    "at": "2026-11-25T11:08:49.005Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 36,
+    "mutatingCalls": 36,
+    "tokens": 163162
+   },
+   {
+    "at": "2026-11-25T11:09:54.034Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 38,
+    "mutatingCalls": 38,
+    "tokens": 164327
+   },
+   {
+    "at": "2026-11-25T11:11:43.133Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 39,
+    "mutatingCalls": 39,
+    "tokens": 165877
+   },
+   {
+    "at": "2026-11-25T11:12:18.384Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 41,
+    "mutatingCalls": 41,
+    "tokens": 168539
+   },
+   {
+    "at": "2026-11-25T11:12:47.017Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 42,
+    "mutatingCalls": 42,
+    "tokens": 170244
+   },
+   {
+    "at": "2026-11-25T11:13:10.048Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 43,
+    "mutatingCalls": 43,
+    "tokens": 170477
+   },
+   {
+    "at": "2026-11-25T11:13:28.447Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 44,
+    "mutatingCalls": 44,
+    "tokens": 170910
+   },
+   {
+    "at": "2026-11-25T11:13:41.574Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 45,
+    "mutatingCalls": 45,
+    "tokens": 171186
+   },
+   {
+    "at": "2026-11-25T11:14:04.914Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 46,
+    "mutatingCalls": 46,
+    "tokens": 171820
+   },
+   {
+    "at": "2026-11-25T11:14:33.354Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 47,
+    "mutatingCalls": 47,
+    "tokens": 172904
+   },
+   {
+    "at": "2026-11-25T11:15:18.282Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 48,
+    "mutatingCalls": 48,
+    "tokens": 174727
+   },
+   {
+    "at": "2026-11-25T11:16:06.750Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 49,
+    "mutatingCalls": 49,
+    "tokens": 174988
+   },
+   {
+    "at": "2026-11-25T11:16:51.791Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 50,
+    "mutatingCalls": 50,
+    "tokens": 175372
+   },
+   {
+    "at": "2026-11-25T11:17:08.300Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 51,
+    "mutatingCalls": 51,
+    "tokens": 176095
+   },
+   {
+    "at": "2026-11-25T11:17:40.571Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 52,
+    "mutatingCalls": 52,
+    "tokens": 178812
+   },
+   {
+    "at": "2026-11-25T11:18:33.010Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 53,
+    "mutatingCalls": 53,
+    "tokens": 179422
+   },
+   {
+    "at": "2026-11-25T11:18:51.269Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 54,
+    "mutatingCalls": 54,
+    "tokens": 179617
+   },
+   {
+    "at": "2026-11-25T11:19:02.951Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 55,
+    "mutatingCalls": 55,
+    "tokens": 180720
+   },
+   {
+    "at": "2026-11-25T11:19:36.423Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 56,
+    "mutatingCalls": 56,
+    "tokens": 185151
+   },
+   {
+    "at": "2026-11-25T11:20:30.761Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 57,
+    "mutatingCalls": 56,
+    "tokens": 186332
+   },
+   {
+    "at": "2026-11-25T11:21:05.551Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 58,
+    "mutatingCalls": 57,
+    "tokens": 187956
+   },
+   {
+    "at": "2026-11-25T11:21:25.842Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 59,
+    "mutatingCalls": 58,
+    "tokens": 191009
+   },
+   {
+    "at": "2026-11-25T11:22:27.976Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 60,
+    "mutatingCalls": 59,
+    "tokens": 192643
+   },
+   {
+    "at": "2026-11-25T11:23:03.457Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 61,
+    "mutatingCalls": 60,
+    "tokens": 192834
+   },
+   {
+    "at": "2026-11-25T11:23:16.449Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 62,
+    "mutatingCalls": 61,
+    "tokens": 194890
+   },
+   {
+    "at": "2026-11-25T11:23:43.481Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 63,
+    "mutatingCalls": 62,
+    "tokens": 195319
+   },
+   {
+    "at": "2026-11-25T11:24:04.303Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 64,
+    "mutatingCalls": 63,
+    "tokens": 196183
+   },
+   {
+    "at": "2026-11-25T11:24:27.416Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 65,
+    "mutatingCalls": 64,
+    "tokens": 198128
+   },
+   {
+    "at": "2026-11-25T11:25:18.123Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 66,
+    "mutatingCalls": 65,
+    "tokens": 201431
+   },
+   {
+    "at": "2026-11-25T11:26:21.470Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 67,
+    "mutatingCalls": 66,
+    "tokens": 201803
+   },
+   {
+    "at": "2026-11-25T11:26:36.311Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 68,
+    "mutatingCalls": 67,
+    "tokens": 202001
+   },
+   {
+    "at": "2026-11-25T11:26:44.781Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 69,
+    "mutatingCalls": 68,
+    "tokens": 202898
+   },
+   {
+    "at": "2026-11-25T11:27:18.809Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 70,
+    "mutatingCalls": 69,
+    "tokens": 203417
+   },
+   {
+    "at": "2026-11-25T11:27:52.786Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 71,
+    "mutatingCalls": 70,
+    "tokens": 204005
+   },
+   {
+    "at": "2026-11-25T11:28:24.439Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 72,
+    "mutatingCalls": 71,
+    "tokens": 204829
+   },
+   {
+    "at": "2026-11-25T11:28:54.147Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 74,
+    "mutatingCalls": 73,
+    "tokens": 206299
+   },
+   {
+    "at": "2026-11-25T11:29:27.066Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 75,
+    "mutatingCalls": 74,
+    "tokens": 206545
+   },
+   {
+    "at": "2026-11-25T11:29:40.493Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 76,
+    "mutatingCalls": 75,
+    "tokens": 206673
+   },
+   {
+    "at": "2026-11-25T11:29:57.971Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 77,
+    "mutatingCalls": 75,
+    "tokens": 207010
+   },
+   {
+    "at": "2026-11-25T11:30:07.629Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 78,
+    "mutatingCalls": 76,
+    "tokens": 207442
+   },
+   {
+    "at": "2026-11-25T11:30:34.065Z",
+    "provider": "kimi",
+    "source": "sticky",
+    "toolCalls": 79,
+    "mutatingCalls": 77,
+    "tokens": 208301
+   }
+  ]
+ },
+ "after": [
+  {
+   "limit": 20,
+   "requests": 63,
+   "kimiRequests": 27,
+   "requestShare": 42.9,
+   "tokenShare": 49.2,
+   "rows": [
+    {
+     "at": "2026-11-25T10:45:24.196Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 0,
+     "mutatingCalls": 0,
+     "tokens": 120372
+    },
+    {
+     "at": "2026-11-25T10:45:32.173Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 2,
+     "mutatingCalls": 0,
+     "tokens": 121957
+    },
+    {
+     "at": "2026-11-25T10:45:47.864Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 4,
+     "mutatingCalls": 0,
+     "tokens": 123449
+    },
+    {
+     "at": "2026-11-25T10:46:00.111Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 6,
+     "mutatingCalls": 1,
+     "tokens": 125253
+    },
+    {
+     "at": "2026-11-25T10:46:07.864Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 8,
+     "mutatingCalls": 1,
+     "tokens": 129761
+    },
+    {
+     "at": "2026-11-25T10:46:19.185Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 10,
+     "mutatingCalls": 1,
+     "tokens": 130033
+    },
+    {
+     "at": "2026-11-25T10:46:22.491Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 11,
+     "mutatingCalls": 1,
+     "tokens": 130798
+    },
+    {
+     "at": "2026-11-25T10:46:33.484Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 13,
+     "mutatingCalls": 1,
+     "tokens": 135285
+    },
+    {
+     "at": "2026-11-25T10:46:51.995Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 15,
+     "mutatingCalls": 3,
+     "tokens": 137726
+    },
+    {
+     "at": "2026-11-25T10:47:16.022Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 17,
+     "mutatingCalls": 4,
+     "tokens": 140620
+    },
+    {
+     "at": "2026-11-25T10:47:34.275Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 19,
+     "mutatingCalls": 5,
+     "tokens": 146772
+    },
+    {
+     "at": "2026-11-25T10:47:51.617Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 21,
+     "mutatingCalls": 6,
+     "tokens": 0
+    },
+    {
+     "at": "2026-11-25T11:02:50.839Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 21,
+     "mutatingCalls": 6,
+     "tokens": 145687
+    },
+    {
+     "at": "2026-11-25T11:03:52.125Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 23,
+     "mutatingCalls": 6,
+     "tokens": 147056
+    },
+    {
+     "at": "2026-11-25T11:04:36.592Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 25,
+     "mutatingCalls": 8,
+     "tokens": 148525
+    },
+    {
+     "at": "2026-11-25T11:05:17.487Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 27,
+     "mutatingCalls": 10,
+     "tokens": 151169
+    },
+    {
+     "at": "2026-11-25T11:05:58.496Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 29,
+     "mutatingCalls": 10,
+     "tokens": 152407
+    },
+    {
+     "at": "2026-11-25T11:06:11.879Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 30,
+     "mutatingCalls": 10,
+     "tokens": 153609
+    },
+    {
+     "at": "2026-11-25T11:06:27.627Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 31,
+     "mutatingCalls": 10,
+     "tokens": 153842
+    },
+    {
+     "at": "2026-11-25T11:06:40.895Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 32,
+     "mutatingCalls": 10,
+     "tokens": 154979
+    },
+    {
+     "at": "2026-11-25T11:06:58.351Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 33,
+     "mutatingCalls": 10,
+     "tokens": 157301
+    },
+    {
+     "at": "2026-11-25T11:08:02.713Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 35,
+     "mutatingCalls": 10,
+     "tokens": 161597
+    },
+    {
+     "at": "2026-11-25T11:08:49.005Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 36,
+     "mutatingCalls": 10,
+     "tokens": 163162
+    },
+    {
+     "at": "2026-11-25T11:09:54.034Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 38,
+     "mutatingCalls": 12,
+     "tokens": 164327
+    },
+    {
+     "at": "2026-11-25T11:11:43.133Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 39,
+     "mutatingCalls": 12,
+     "tokens": 165877
+    },
+    {
+     "at": "2026-11-25T11:12:18.384Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 41,
+     "mutatingCalls": 13,
+     "tokens": 168539
+    },
+    {
+     "at": "2026-11-25T11:12:47.017Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 42,
+     "mutatingCalls": 14,
+     "tokens": 170244
+    },
+    {
+     "at": "2026-11-25T11:13:10.048Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 43,
+     "mutatingCalls": 15,
+     "tokens": 170477
+    },
+    {
+     "at": "2026-11-25T11:13:28.447Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 44,
+     "mutatingCalls": 16,
+     "tokens": 170910
+    },
+    {
+     "at": "2026-11-25T11:13:41.574Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 45,
+     "mutatingCalls": 17,
+     "tokens": 171186
+    },
+    {
+     "at": "2026-11-25T11:14:04.914Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 46,
+     "mutatingCalls": 18,
+     "tokens": 171820
+    },
+    {
+     "at": "2026-11-25T11:14:33.354Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 47,
+     "mutatingCalls": 18,
+     "tokens": 172904
+    },
+    {
+     "at": "2026-11-25T11:15:18.282Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 48,
+     "mutatingCalls": 18,
+     "tokens": 174727
+    },
+    {
+     "at": "2026-11-25T11:16:06.750Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 49,
+     "mutatingCalls": 19,
+     "tokens": 174988
+    },
+    {
+     "at": "2026-11-25T11:16:51.791Z",
+     "provider": "kimi",
+     "source": "evidence",
+     "toolCalls": 50,
+     "mutatingCalls": 20,
+     "tokens": 175372
+    },
+    {
+     "at": "2026-11-25T11:17:08.300Z",
+     "provider": "kimi",
+     "source": "sticky",
+     "toolCalls": 51,
+     "mutatingCalls": 21,
+     "tokens": 176095
+    },
+    {
+     "at": "2026-11-25T11:17:40.571Z",
+     "provider": "kimi",
+     "source": "sticky",
+     "toolCalls": 52,
+     "mutatingCalls": 21,
+     "tokens": 178812
+    },
+    {
+     "at": "2026-11-25T11:18:33.010Z",
+     "provider": "kimi",
+     "source": "sticky",
+     "toolCalls": 53,
+     "mutatingCalls": 22,
+     "tokens": 179422
+    },
+    {
+     "at": "2026-11-25T11:18:51.269Z",
+     "provider": "kimi",
+     "source": "sticky",
+     "toolCalls": 54,
+     "mutatingCalls": 23,
+     "tokens": 179617
+    },
+    {
+     "at": "2026-11-25T11:19:02.951Z",
+     "provider": "kimi",
+     "source": "sticky",
+     "toolCalls": 55,
+     "mutatingCalls": 24,
+     "tokens": 180720
+    },
+    {
+     "at": "2026-11-25T11:19:36.423Z",
+     "provider": "kimi",
+     "source": "sticky",
+     "toolCalls": 56,
+     "mutatingCalls": 24,
+     "tokens": 185151
+    },
+    {
+     "at": "2026-11-25T11:20:30.761Z",
+     "provider": "kimi",
+     "source": "sticky",
+     "toolCalls": 57,
+     "mutatingCalls": 24,
+     "tokens": 186332
+    },
+    {
+     "at": "2026-11-25T11:21:05.551Z",
+     "provider": "kimi",
+     "source": "sticky",
+     "toolCalls": 58,
+     "mutatingCalls": 24,
+     "tokens": 187956
+    },
+    {
+     "at": "2026-11-25T11:21:25.842Z",
+     "provider": "kimi",
+     "source": "sticky",
+     "toolCalls": 59,
+     "mutatingCalls": 24,
+     "tokens": 191009
+    },
+    {
+     "at": "2026-11-25T11:22:27.976Z",
+     "provider": "kimi",
+     "source": "sticky",
+     "toolCalls": 60,
+     "mutatingCalls": 25,
+     "tokens": 192643
+    },
+    {
+     "at": "2026-11-25T11:23:03.457Z",
+     "provider": "kimi",
+     "source": "sticky",
+     "toolCalls": 61,
+     "mutatingCalls": 26,
+     "tokens": 192834
+    },
+    {
+     "at": "2026-11-25T11:23:16.449Z",
+     "provider": "kimi",
+     "source": "sticky",
+     "toolCalls": 62,
+     "mutatingCalls": 27,
+     "tokens": 194890
+    },
+    {
+     "at": "2026-11-25T11:23:43.481Z",
+     "provider": "kimi",
+     "source": "sticky",
+     "toolCalls": 63,
+     "mutatingCalls": 28,
+     "tokens": 195319
+    },
+    {
+     "at": "2026-11-25T11:24:04.303Z",
+     "provider": "kimi",
+     "source": "sticky",
+     "toolCalls": 64,
+     "mutatingCalls": 29,
+     "tokens": 196183
+    },
+    {
+     "at": "2026-11-25T11:24:27.416Z",
+     "provider": "kimi",
+     "source": "sticky",
+     "toolCalls": 65,
+     "mutatingCalls": 29,
+     "tokens": 198128
+    },
+    {
+     "at": "2026-11-25T11:25:18.123Z",
+     "provider": "kimi",
+     "source": "sticky",
+     "toolCalls": 66,
+     "mutatingCalls": 30,
+     "tokens": 201431
+    },
+    {
+     "at": "2026-11-25T11:26:21.470Z",
+     "provider": "kimi",
+     "source": "sticky",
+     "toolCalls": 67,
+     "mutatingCalls": 31,
+     "tokens": 201803
+    },
+    {
+     "at": "2026-11-25T11:26:36.311Z",
+     "provider": "kimi",
+     "source": "sticky",
+     "toolCalls": 68,
+     "mutatingCalls": 32,
+     "tokens": 202001
+    },
+    {
+     "at": "2026-11-25T11:26:44.781Z",
+     "provider": "kimi",
+     "source": "sticky",
+     "toolCalls": 69,
+     "mutatingCalls": 32,
+     "tokens": 202898
+    },
+    {
+     "at": "2026-11-25T11:27:18.809Z",
+     "provider": "kimi",
+     "source": "sticky",
+     "toolCalls": 70,
+     "mutatingCalls": 33,
+     "tokens": 203417
+    },
+    {
+     "at": "2026-11-25T11:27:52.786Z",
+     "provider": "kimi",
+     "source": "sticky",
+     "toolCalls": 71,
+     "mutatingCalls": 34,
+     "tokens": 204005
+    },
+    {
+     "at": "2026-11-25T11:28:24.439Z",
+     "provider": "kimi",
+     "source": "sticky",
+     "toolCalls": 72,
+     "mutatingCalls": 35,
+     "tokens": 204829
+    },
+    {
+     "at": "2026-11-25T11:28:54.147Z",
+     "provider": "deepseek",
+     "source": "deescalation_probe",
+     "toolCalls": 74,
+     "mutatingCalls": 37,
+     "tokens": 206299
+    },
+    {
+     "at": "2026-11-25T11:29:27.066Z",
+     "provider": "deepseek",
+     "source": "probe",
+     "toolCalls": 75,
+     "mutatingCalls": 38,
+     "tokens": 206545
+    },
+    {
+     "at": "2026-11-25T11:29:40.493Z",
+     "provider": "kimi",
+     "source": "relapse",
+     "toolCalls": 76,
+     "mutatingCalls": 39,
+     "tokens": 206673
+    },
+    {
+     "at": "2026-11-25T11:29:57.971Z",
+     "provider": "kimi",
+     "source": "sticky",
+     "toolCalls": 77,
+     "mutatingCalls": 39,
+     "tokens": 207010
+    },
+    {
+     "at": "2026-11-25T11:30:07.629Z",
+     "provider": "kimi",
+     "source": "sticky",
+     "toolCalls": 78,
+     "mutatingCalls": 40,
+     "tokens": 207442
+    },
+    {
+     "at": "2026-11-25T11:30:34.065Z",
+     "provider": "kimi",
+     "source": "sticky",
+     "toolCalls": 79,
+     "mutatingCalls": 41,
+     "tokens": 208301
+    }
+   ]
+  },
+  {
+   "limit": 40,
+   "requests": 63,
+   "kimiRequests": 2,
+   "requestShare": 3.2,
+   "tokenShare": 3.9,
+   "rows": [
+    {
+     "at": "2026-11-25T10:45:24.196Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 0,
+     "mutatingCalls": 0,
+     "tokens": 120372
+    },
+    {
+     "at": "2026-11-25T10:45:32.173Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 2,
+     "mutatingCalls": 0,
+     "tokens": 121957
+    },
+    {
+     "at": "2026-11-25T10:45:47.864Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 4,
+     "mutatingCalls": 0,
+     "tokens": 123449
+    },
+    {
+     "at": "2026-11-25T10:46:00.111Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 6,
+     "mutatingCalls": 1,
+     "tokens": 125253
+    },
+    {
+     "at": "2026-11-25T10:46:07.864Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 8,
+     "mutatingCalls": 1,
+     "tokens": 129761
+    },
+    {
+     "at": "2026-11-25T10:46:19.185Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 10,
+     "mutatingCalls": 1,
+     "tokens": 130033
+    },
+    {
+     "at": "2026-11-25T10:46:22.491Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 11,
+     "mutatingCalls": 1,
+     "tokens": 130798
+    },
+    {
+     "at": "2026-11-25T10:46:33.484Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 13,
+     "mutatingCalls": 1,
+     "tokens": 135285
+    },
+    {
+     "at": "2026-11-25T10:46:51.995Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 15,
+     "mutatingCalls": 3,
+     "tokens": 137726
+    },
+    {
+     "at": "2026-11-25T10:47:16.022Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 17,
+     "mutatingCalls": 4,
+     "tokens": 140620
+    },
+    {
+     "at": "2026-11-25T10:47:34.275Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 19,
+     "mutatingCalls": 5,
+     "tokens": 146772
+    },
+    {
+     "at": "2026-11-25T10:47:51.617Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 21,
+     "mutatingCalls": 6,
+     "tokens": 0
+    },
+    {
+     "at": "2026-11-25T11:02:50.839Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 21,
+     "mutatingCalls": 6,
+     "tokens": 145687
+    },
+    {
+     "at": "2026-11-25T11:03:52.125Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 23,
+     "mutatingCalls": 6,
+     "tokens": 147056
+    },
+    {
+     "at": "2026-11-25T11:04:36.592Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 25,
+     "mutatingCalls": 8,
+     "tokens": 148525
+    },
+    {
+     "at": "2026-11-25T11:05:17.487Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 27,
+     "mutatingCalls": 10,
+     "tokens": 151169
+    },
+    {
+     "at": "2026-11-25T11:05:58.496Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 29,
+     "mutatingCalls": 10,
+     "tokens": 152407
+    },
+    {
+     "at": "2026-11-25T11:06:11.879Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 30,
+     "mutatingCalls": 10,
+     "tokens": 153609
+    },
+    {
+     "at": "2026-11-25T11:06:27.627Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 31,
+     "mutatingCalls": 10,
+     "tokens": 153842
+    },
+    {
+     "at": "2026-11-25T11:06:40.895Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 32,
+     "mutatingCalls": 10,
+     "tokens": 154979
+    },
+    {
+     "at": "2026-11-25T11:06:58.351Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 33,
+     "mutatingCalls": 10,
+     "tokens": 157301
+    },
+    {
+     "at": "2026-11-25T11:08:02.713Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 35,
+     "mutatingCalls": 10,
+     "tokens": 161597
+    },
+    {
+     "at": "2026-11-25T11:08:49.005Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 36,
+     "mutatingCalls": 10,
+     "tokens": 163162
+    },
+    {
+     "at": "2026-11-25T11:09:54.034Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 38,
+     "mutatingCalls": 12,
+     "tokens": 164327
+    },
+    {
+     "at": "2026-11-25T11:11:43.133Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 39,
+     "mutatingCalls": 12,
+     "tokens": 165877
+    },
+    {
+     "at": "2026-11-25T11:12:18.384Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 41,
+     "mutatingCalls": 13,
+     "tokens": 168539
+    },
+    {
+     "at": "2026-11-25T11:12:47.017Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 42,
+     "mutatingCalls": 14,
+     "tokens": 170244
+    },
+    {
+     "at": "2026-11-25T11:13:10.048Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 43,
+     "mutatingCalls": 15,
+     "tokens": 170477
+    },
+    {
+     "at": "2026-11-25T11:13:28.447Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 44,
+     "mutatingCalls": 16,
+     "tokens": 170910
+    },
+    {
+     "at": "2026-11-25T11:13:41.574Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 45,
+     "mutatingCalls": 17,
+     "tokens": 171186
+    },
+    {
+     "at": "2026-11-25T11:14:04.914Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 46,
+     "mutatingCalls": 18,
+     "tokens": 171820
+    },
+    {
+     "at": "2026-11-25T11:14:33.354Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 47,
+     "mutatingCalls": 18,
+     "tokens": 172904
+    },
+    {
+     "at": "2026-11-25T11:15:18.282Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 48,
+     "mutatingCalls": 18,
+     "tokens": 174727
+    },
+    {
+     "at": "2026-11-25T11:16:06.750Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 49,
+     "mutatingCalls": 19,
+     "tokens": 174988
+    },
+    {
+     "at": "2026-11-25T11:16:51.791Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 50,
+     "mutatingCalls": 20,
+     "tokens": 175372
+    },
+    {
+     "at": "2026-11-25T11:17:08.300Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 51,
+     "mutatingCalls": 21,
+     "tokens": 176095
+    },
+    {
+     "at": "2026-11-25T11:17:40.571Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 52,
+     "mutatingCalls": 21,
+     "tokens": 178812
+    },
+    {
+     "at": "2026-11-25T11:18:33.010Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 53,
+     "mutatingCalls": 22,
+     "tokens": 179422
+    },
+    {
+     "at": "2026-11-25T11:18:51.269Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 54,
+     "mutatingCalls": 23,
+     "tokens": 179617
+    },
+    {
+     "at": "2026-11-25T11:19:02.951Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 55,
+     "mutatingCalls": 24,
+     "tokens": 180720
+    },
+    {
+     "at": "2026-11-25T11:19:36.423Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 56,
+     "mutatingCalls": 24,
+     "tokens": 185151
+    },
+    {
+     "at": "2026-11-25T11:20:30.761Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 57,
+     "mutatingCalls": 24,
+     "tokens": 186332
+    },
+    {
+     "at": "2026-11-25T11:21:05.551Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 58,
+     "mutatingCalls": 24,
+     "tokens": 187956
+    },
+    {
+     "at": "2026-11-25T11:21:25.842Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 59,
+     "mutatingCalls": 24,
+     "tokens": 191009
+    },
+    {
+     "at": "2026-11-25T11:22:27.976Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 60,
+     "mutatingCalls": 25,
+     "tokens": 192643
+    },
+    {
+     "at": "2026-11-25T11:23:03.457Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 61,
+     "mutatingCalls": 26,
+     "tokens": 192834
+    },
+    {
+     "at": "2026-11-25T11:23:16.449Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 62,
+     "mutatingCalls": 27,
+     "tokens": 194890
+    },
+    {
+     "at": "2026-11-25T11:23:43.481Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 63,
+     "mutatingCalls": 28,
+     "tokens": 195319
+    },
+    {
+     "at": "2026-11-25T11:24:04.303Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 64,
+     "mutatingCalls": 29,
+     "tokens": 196183
+    },
+    {
+     "at": "2026-11-25T11:24:27.416Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 65,
+     "mutatingCalls": 29,
+     "tokens": 198128
+    },
+    {
+     "at": "2026-11-25T11:25:18.123Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 66,
+     "mutatingCalls": 30,
+     "tokens": 201431
+    },
+    {
+     "at": "2026-11-25T11:26:21.470Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 67,
+     "mutatingCalls": 31,
+     "tokens": 201803
+    },
+    {
+     "at": "2026-11-25T11:26:36.311Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 68,
+     "mutatingCalls": 32,
+     "tokens": 202001
+    },
+    {
+     "at": "2026-11-25T11:26:44.781Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 69,
+     "mutatingCalls": 32,
+     "tokens": 202898
+    },
+    {
+     "at": "2026-11-25T11:27:18.809Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 70,
+     "mutatingCalls": 33,
+     "tokens": 203417
+    },
+    {
+     "at": "2026-11-25T11:27:52.786Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 71,
+     "mutatingCalls": 34,
+     "tokens": 204005
+    },
+    {
+     "at": "2026-11-25T11:28:24.439Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 72,
+     "mutatingCalls": 35,
+     "tokens": 204829
+    },
+    {
+     "at": "2026-11-25T11:28:54.147Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 74,
+     "mutatingCalls": 37,
+     "tokens": 206299
+    },
+    {
+     "at": "2026-11-25T11:29:27.066Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 75,
+     "mutatingCalls": 38,
+     "tokens": 206545
+    },
+    {
+     "at": "2026-11-25T11:29:40.493Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 76,
+     "mutatingCalls": 39,
+     "tokens": 206673
+    },
+    {
+     "at": "2026-11-25T11:29:57.971Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 77,
+     "mutatingCalls": 39,
+     "tokens": 207010
+    },
+    {
+     "at": "2026-11-25T11:30:07.629Z",
+     "provider": "kimi",
+     "source": "evidence",
+     "toolCalls": 78,
+     "mutatingCalls": 40,
+     "tokens": 207442
+    },
+    {
+     "at": "2026-11-25T11:30:34.065Z",
+     "provider": "kimi",
+     "source": "sticky",
+     "toolCalls": 79,
+     "mutatingCalls": 41,
+     "tokens": 208301
+    }
+   ]
+  },
+  {
+   "limit": 60,
+   "requests": 63,
+   "kimiRequests": 0,
+   "requestShare": 0,
+   "tokenShare": 0,
+   "rows": [
+    {
+     "at": "2026-11-25T10:45:24.196Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 0,
+     "mutatingCalls": 0,
+     "tokens": 120372
+    },
+    {
+     "at": "2026-11-25T10:45:32.173Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 2,
+     "mutatingCalls": 0,
+     "tokens": 121957
+    },
+    {
+     "at": "2026-11-25T10:45:47.864Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 4,
+     "mutatingCalls": 0,
+     "tokens": 123449
+    },
+    {
+     "at": "2026-11-25T10:46:00.111Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 6,
+     "mutatingCalls": 1,
+     "tokens": 125253
+    },
+    {
+     "at": "2026-11-25T10:46:07.864Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 8,
+     "mutatingCalls": 1,
+     "tokens": 129761
+    },
+    {
+     "at": "2026-11-25T10:46:19.185Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 10,
+     "mutatingCalls": 1,
+     "tokens": 130033
+    },
+    {
+     "at": "2026-11-25T10:46:22.491Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 11,
+     "mutatingCalls": 1,
+     "tokens": 130798
+    },
+    {
+     "at": "2026-11-25T10:46:33.484Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 13,
+     "mutatingCalls": 1,
+     "tokens": 135285
+    },
+    {
+     "at": "2026-11-25T10:46:51.995Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 15,
+     "mutatingCalls": 3,
+     "tokens": 137726
+    },
+    {
+     "at": "2026-11-25T10:47:16.022Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 17,
+     "mutatingCalls": 4,
+     "tokens": 140620
+    },
+    {
+     "at": "2026-11-25T10:47:34.275Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 19,
+     "mutatingCalls": 5,
+     "tokens": 146772
+    },
+    {
+     "at": "2026-11-25T10:47:51.617Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 21,
+     "mutatingCalls": 6,
+     "tokens": 0
+    },
+    {
+     "at": "2026-11-25T11:02:50.839Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 21,
+     "mutatingCalls": 6,
+     "tokens": 145687
+    },
+    {
+     "at": "2026-11-25T11:03:52.125Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 23,
+     "mutatingCalls": 6,
+     "tokens": 147056
+    },
+    {
+     "at": "2026-11-25T11:04:36.592Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 25,
+     "mutatingCalls": 8,
+     "tokens": 148525
+    },
+    {
+     "at": "2026-11-25T11:05:17.487Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 27,
+     "mutatingCalls": 10,
+     "tokens": 151169
+    },
+    {
+     "at": "2026-11-25T11:05:58.496Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 29,
+     "mutatingCalls": 10,
+     "tokens": 152407
+    },
+    {
+     "at": "2026-11-25T11:06:11.879Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 30,
+     "mutatingCalls": 10,
+     "tokens": 153609
+    },
+    {
+     "at": "2026-11-25T11:06:27.627Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 31,
+     "mutatingCalls": 10,
+     "tokens": 153842
+    },
+    {
+     "at": "2026-11-25T11:06:40.895Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 32,
+     "mutatingCalls": 10,
+     "tokens": 154979
+    },
+    {
+     "at": "2026-11-25T11:06:58.351Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 33,
+     "mutatingCalls": 10,
+     "tokens": 157301
+    },
+    {
+     "at": "2026-11-25T11:08:02.713Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 35,
+     "mutatingCalls": 10,
+     "tokens": 161597
+    },
+    {
+     "at": "2026-11-25T11:08:49.005Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 36,
+     "mutatingCalls": 10,
+     "tokens": 163162
+    },
+    {
+     "at": "2026-11-25T11:09:54.034Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 38,
+     "mutatingCalls": 12,
+     "tokens": 164327
+    },
+    {
+     "at": "2026-11-25T11:11:43.133Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 39,
+     "mutatingCalls": 12,
+     "tokens": 165877
+    },
+    {
+     "at": "2026-11-25T11:12:18.384Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 41,
+     "mutatingCalls": 13,
+     "tokens": 168539
+    },
+    {
+     "at": "2026-11-25T11:12:47.017Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 42,
+     "mutatingCalls": 14,
+     "tokens": 170244
+    },
+    {
+     "at": "2026-11-25T11:13:10.048Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 43,
+     "mutatingCalls": 15,
+     "tokens": 170477
+    },
+    {
+     "at": "2026-11-25T11:13:28.447Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 44,
+     "mutatingCalls": 16,
+     "tokens": 170910
+    },
+    {
+     "at": "2026-11-25T11:13:41.574Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 45,
+     "mutatingCalls": 17,
+     "tokens": 171186
+    },
+    {
+     "at": "2026-11-25T11:14:04.914Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 46,
+     "mutatingCalls": 18,
+     "tokens": 171820
+    },
+    {
+     "at": "2026-11-25T11:14:33.354Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 47,
+     "mutatingCalls": 18,
+     "tokens": 172904
+    },
+    {
+     "at": "2026-11-25T11:15:18.282Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 48,
+     "mutatingCalls": 18,
+     "tokens": 174727
+    },
+    {
+     "at": "2026-11-25T11:16:06.750Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 49,
+     "mutatingCalls": 19,
+     "tokens": 174988
+    },
+    {
+     "at": "2026-11-25T11:16:51.791Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 50,
+     "mutatingCalls": 20,
+     "tokens": 175372
+    },
+    {
+     "at": "2026-11-25T11:17:08.300Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 51,
+     "mutatingCalls": 21,
+     "tokens": 176095
+    },
+    {
+     "at": "2026-11-25T11:17:40.571Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 52,
+     "mutatingCalls": 21,
+     "tokens": 178812
+    },
+    {
+     "at": "2026-11-25T11:18:33.010Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 53,
+     "mutatingCalls": 22,
+     "tokens": 179422
+    },
+    {
+     "at": "2026-11-25T11:18:51.269Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 54,
+     "mutatingCalls": 23,
+     "tokens": 179617
+    },
+    {
+     "at": "2026-11-25T11:19:02.951Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 55,
+     "mutatingCalls": 24,
+     "tokens": 180720
+    },
+    {
+     "at": "2026-11-25T11:19:36.423Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 56,
+     "mutatingCalls": 24,
+     "tokens": 185151
+    },
+    {
+     "at": "2026-11-25T11:20:30.761Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 57,
+     "mutatingCalls": 24,
+     "tokens": 186332
+    },
+    {
+     "at": "2026-11-25T11:21:05.551Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 58,
+     "mutatingCalls": 24,
+     "tokens": 187956
+    },
+    {
+     "at": "2026-11-25T11:21:25.842Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 59,
+     "mutatingCalls": 24,
+     "tokens": 191009
+    },
+    {
+     "at": "2026-11-25T11:22:27.976Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 60,
+     "mutatingCalls": 25,
+     "tokens": 192643
+    },
+    {
+     "at": "2026-11-25T11:23:03.457Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 61,
+     "mutatingCalls": 26,
+     "tokens": 192834
+    },
+    {
+     "at": "2026-11-25T11:23:16.449Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 62,
+     "mutatingCalls": 27,
+     "tokens": 194890
+    },
+    {
+     "at": "2026-11-25T11:23:43.481Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 63,
+     "mutatingCalls": 28,
+     "tokens": 195319
+    },
+    {
+     "at": "2026-11-25T11:24:04.303Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 64,
+     "mutatingCalls": 29,
+     "tokens": 196183
+    },
+    {
+     "at": "2026-11-25T11:24:27.416Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 65,
+     "mutatingCalls": 29,
+     "tokens": 198128
+    },
+    {
+     "at": "2026-11-25T11:25:18.123Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 66,
+     "mutatingCalls": 30,
+     "tokens": 201431
+    },
+    {
+     "at": "2026-11-25T11:26:21.470Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 67,
+     "mutatingCalls": 31,
+     "tokens": 201803
+    },
+    {
+     "at": "2026-11-25T11:26:36.311Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 68,
+     "mutatingCalls": 32,
+     "tokens": 202001
+    },
+    {
+     "at": "2026-11-25T11:26:44.781Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 69,
+     "mutatingCalls": 32,
+     "tokens": 202898
+    },
+    {
+     "at": "2026-11-25T11:27:18.809Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 70,
+     "mutatingCalls": 33,
+     "tokens": 203417
+    },
+    {
+     "at": "2026-11-25T11:27:52.786Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 71,
+     "mutatingCalls": 34,
+     "tokens": 204005
+    },
+    {
+     "at": "2026-11-25T11:28:24.439Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 72,
+     "mutatingCalls": 35,
+     "tokens": 204829
+    },
+    {
+     "at": "2026-11-25T11:28:54.147Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 74,
+     "mutatingCalls": 37,
+     "tokens": 206299
+    },
+    {
+     "at": "2026-11-25T11:29:27.066Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 75,
+     "mutatingCalls": 38,
+     "tokens": 206545
+    },
+    {
+     "at": "2026-11-25T11:29:40.493Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 76,
+     "mutatingCalls": 39,
+     "tokens": 206673
+    },
+    {
+     "at": "2026-11-25T11:29:57.971Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 77,
+     "mutatingCalls": 39,
+     "tokens": 207010
+    },
+    {
+     "at": "2026-11-25T11:30:07.629Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 78,
+     "mutatingCalls": 40,
+     "tokens": 207442
+    },
+    {
+     "at": "2026-11-25T11:30:34.065Z",
+     "provider": "deepseek",
+     "source": "default",
+     "toolCalls": 79,
+     "mutatingCalls": 41,
+     "tokens": 208301
+    }
+   ]
+  }
+ ],
+ "commandStats": [
+  {
+   "id": "submission-task",
+   "calls": 85,
+   "v1": {
+    "mutating": 83,
+    "read": 2,
+    "other": 0
+   },
+   "v2": {
+    "mutating": 43,
+    "read": 42,
+    "other": 0
+   },
+   "v1Crossed20At": "2026-11-25T10:47:41.121Z",
+   "v2Crossed20At": "2026-11-25T11:16:17.646Z"
+  },
+  {
+   "id": "read-only-analysis",
+   "calls": 69,
+   "v1": {
+    "mutating": 64,
+    "read": 5,
+    "other": 0
+   },
+   "v2": {
+    "mutating": 44,
+    "read": 25,
+    "other": 0
+   },
+   "v1Crossed20At": "2026-11-25T11:40:52.190Z",
+   "v2Crossed20At": "2026-11-25T11:50:11.169Z"
+  }
+ ],
+ "replayValidity": {
+  "identicalDecisions": 63,
+  "totalDecisions": 63
+ }
+}

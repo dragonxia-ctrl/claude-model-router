@@ -12,6 +12,8 @@ A local, safety-first routing proxy for **Claude Code**. It keeps DeepSeek as th
 >
 > This is an independent community project. It is not affiliated with or endorsed by Anthropic, DeepSeek, or Moonshot AI. Claude Code is a product of Anthropic.
 
+**Version information:** [VERSIONS.md](VERSIONS.md) — what each version changed, why, and the measurements behind it. Current release: **v2 (1.2.0)**.
+
 ---
 
 ## Why this exists
@@ -42,7 +44,7 @@ This project puts a small HTTP proxy on `127.0.0.1` between Claude Code and the 
   - repeated failed verification cycles after edits,
   - repeated error signatures,
   - consecutive tool failures,
-  - long mutating sequences,
+  - long mutating sequences (real writes; read-only commands do not count),
   - the same mutating invocation repeated.
 - Optionally runs a cheap semantic triage call for long, unclassified tasks. The triage call has thinking disabled, returns a small JSON object, is cached, and safely falls back to DeepSeek on any failure.
 - Keeps the same provider for the same task once Kimi has been selected, reducing mid-task model churn.
@@ -105,7 +107,7 @@ flowchart LR
 6. Incompatible thinking blocks are removed if providers switch.
 7. The request is forwarded upstream with the provider's key.
 8. Response status, content type, SSE chunks, and retry headers are passed back unchanged.
-9. A structured log line records provider, reason, source, stream flag, and progress stats. Prompts and API keys are not logged.
+9. A structured log line records provider, reason, source, stream flag, progress stats, conversation/task keys, and the de-escalation outcome. Prompts and API keys are not logged.
 
 ### Routing policy
 
@@ -119,7 +121,7 @@ The default policy is intentionally conservative. It is based on public comparis
 | Difficult tool-assisted research | Kimi ahead on HLE-style tasks | Kimi for source-oriented multi-step research |
 | Frontier math, complex visual, video | Kimi advantage | Kimi |
 
-Kimi residency is bounded rather than permanent. After four Kimi requests by default, a clean recent execution window and a new human checkpoint permit two DeepSeek probe requests. New failures return to Kimi with capped exponential backoff; video and complex visual requirements never automatically de-escalate. Explicit model selection still wins.
+Kimi residency is bounded rather than permanent. After four Kimi requests by default, a clean recent execution window at a recovery checkpoint permits two DeepSeek probe requests. A checkpoint is a new human message or — inside a long tool-use turn — every 24 new tool calls, so a single long turn no longer pins Kimi indefinitely. New failures return to Kimi with capped exponential backoff; video and complex visual requirements never automatically de-escalate. Explicit model selection still wins.
 
 The exact rules, tuning knobs, and open-source design references are documented in [docs/routing-policy.md](docs/routing-policy.md).
 
@@ -408,6 +410,7 @@ Useful endpoints:
 | `GET /health/live` | Unauthenticated process liveness |
 | `GET /health/ready` | Configuration/provider readiness; 503 when no provider is configured |
 | `GET /health/deep` | Authenticated passive diagnostics; never spends provider tokens |
+| `GET /version` | Unauthenticated running release, latest published release, and update availability |
 | `GET /metrics` | Authenticated Prometheus request, token, routing, and recovery metrics |
 | `GET /metrics/json` | Authenticated JSON telemetry snapshot |
 | `GET /v1/models` | Claude Code model listing (`auto`, DeepSeek, Kimi) |
@@ -427,6 +430,23 @@ Install the bundled terminal mod from the repository marketplace, then restart C
 ```
 
 After each completed turn it shows DeepSeek/Kimi token totals, token ratios, and model-request time immediately above the native turn-duration footer. `/router-usage` shows the detailed breakdown. The probe is terminal-only and does not need provider keys.
+
+### Version display in Claude Code
+
+`GET /version` reports the running release and the latest published release, and the router writes the same state to `~/.claude/model-router/version-cache.json` at startup and at most every six hours (offline checks are silent).
+
+To see it inside Claude Code in the native status line — the same place Claude Code shows its own version and upgrade notices — add this to `~/.claude/settings.json` and restart Claude Code:
+
+```json
+"statusLine": {
+  "type": "command",
+  "command": "node \"$HOME/.claude/model-router/version-status.mjs\""
+}
+```
+
+(`version-status.mjs` is `scripts/version-status.mjs` in this repository; copy it into the data directory for a manual install.)
+
+The status line then shows `router v1.2.0 · latest v1.2.0` dimmed, and switches to an amber `router v1.2.0 · v1.3.0 available` when a newer release exists. The helper only reads the local cache file: no network access, no provider tokens, and no output when the router has never reported a version. Outside Claude Code, `claude-router version` prints the same information.
 
 ---
 
@@ -558,6 +578,7 @@ npm run doctor
 ├── compose.yaml         hardened container deployment
 ├── Dockerfile
 ├── CONTRIBUTING.md
+├── VERSIONS.md            version area: what changed, why, measured evidence
 ├── SECURITY.md
 └── LICENSE
 ```

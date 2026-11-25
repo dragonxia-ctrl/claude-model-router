@@ -2,6 +2,29 @@
 
 All notable changes are documented here. The format follows Keep a Changelog and the project uses semantic versioning.
 
+The version area with the problem analysis and measured evidence lives in [VERSIONS.md](VERSIONS.md).
+
+## [1.2.0] - 2026-11-25
+
+### Fixed
+
+- Read-only command shapes no longer count toward the cumulative mutating-call escalation rule: `echo`/`printf` chains, read-only CLI queries (`kaggle … status|list|files|leaderboard|submissions`, `pip list|show`), and inline Python with no write operation. Real writes, script files, and any write marker still count.
+- A task that escalated to Kimi can now recover inside a single long turn. The same 24-tool-call recovery window is evaluated every 24 new tool calls, in addition to new user messages; backoff, probe length, hard-capability locks, and relapse behavior are unchanged.
+
+### Added
+
+- `route_decision` logs now carry `conversationKey`, `taskKey`, and `deescalationOutcome`, so a routing decision can be attributed to a session and a de-escalation attempt.
+- `GET /version` reports the running release, the latest published release, and update availability; `/health` also carries `release`. The router checks its own GitHub releases at startup and at most every six hours, caches the answer, and stays silent when offline.
+- `scripts/version-status.mjs` shows `router v<current> · latest v<published>` in Claude Code's native status line and highlights the line when an update is available; `claude-router version` prints the same state outside Claude Code. The status line helper reads only the local cache file.
+- `VERSIONS.md` and `docs/versions/`: per-version reports with reproducible measurements and generated figures.
+- Five regression tests for command classification and mid-turn recovery, plus one for the log fields.
+
+### Changed
+
+- One existing de-escalation test now probes mid-turn instead of waiting for the next user message.
+
+On the measured 63-request task, Kimi's share moves from 82.5% to 42.9% of requests (86.5% → 49.2% of tokens). See [docs/versions/v1-to-v2.md](docs/versions/v1-to-v2.md).
+
 ## [1.1.0] - 2026-11-25
 
 ### Added

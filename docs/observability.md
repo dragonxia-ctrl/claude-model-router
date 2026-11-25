@@ -73,6 +73,38 @@ Manual Node deployments can set:
 
 Files are named `requests-YYYY-MM-DD[-n].jsonl`, created with owner-only permissions on POSIX (Windows uses the private data directory's ACL), rotated at `maxFileBytes`, and cleaned by age according to `retentionDays`. Rotation limits each file, not the total daily volume. A bounded write buffer drops records rather than blocking request traffic; drops and write errors are visible in telemetry. If the salt or directory cannot be initialized, persistence is disabled instead of crashing the router.
 
+## Version and update visibility
+
+`GET /version` answers without authentication and without waiting on the network:
+
+```json
+{
+  "current": "1.2.0",
+  "latest": "v1.2.0",
+  "status": "current",
+  "updateAvailable": false,
+  "checkedAt": "2026-11-25T13:50:00.000Z",
+  "repository": "dragonxia-ctrl/claude-model-router"
+}
+```
+
+`status` is `current` when the running release matches the latest release, `available` when a newer release exists, `ahead` when the running build is newer than anything published, and `unknown` when no release information has been fetched yet. `GET /health` also carries the running release as `release`.
+
+The router checks the public GitHub `releases/latest` endpoint of its own repository (falling back to its tag list) at startup and at most once every six hours, caches the result in `version-cache.json` next to `config.json` (override with `CLAUDE_ROUTER_VERSION_CACHE`), and serves the cached answer to `/version`. A failed or unreachable lookup is silent: the endpoint still reports the running release with `status: "unknown"`. No prompts, tool history, keys, or local identifiers are sent — the update check is a single unauthenticated GitHub read, exactly like an application checking its own release feed. `claude-router version` prints the same state outside Claude Code.
+
+### Status line inside Claude Code
+
+`scripts/version-status.mjs` formats that cache for Claude Code's native status line, which is where Claude Code itself shows its version and upgrade notices:
+
+```json
+"statusLine": {
+  "type": "command",
+  "command": "node \"$HOME/.claude/model-router/version-status.mjs\""
+}
+```
+
+It prints `router v1.2.0 · latest v1.2.0` dimmed, or `router v1.2.0 · v1.3.0 available` in amber when an upgrade exists, and nothing at all when the router has never written a version cache. The helper performs no I/O beyond reading that one file, so it is safe on every status line refresh. Mods such as the usage probe run in a sandbox without `fetch`, `process`, or filesystem access, which is why version visibility uses the status line rather than the turn footer.
+
 ## Terminal usage probe
 
 `mods/usage-probe` is a Claude Code terminal mod. It renders real per-model token consumption and model-request time immediately above the native `TurnDuration` footer (for example, `Churned for 22s · done ...`). It also provides `/router-usage` for a detailed breakdown.
