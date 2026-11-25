@@ -7,6 +7,7 @@ services:
       CLAUDE_ROUTER_CONFIG: /data/config.json
       CLAUDE_ROUTER_HOST: 0.0.0.0
       CLAUDE_ROUTER_PORT: ${CLAUDE_ROUTER_PORT:-17861}
+      CLAUDE_ROUTER_TELEMETRY_DIR: /telemetry
     ports:
       - "127.0.0.1:${CLAUDE_ROUTER_PORT:-17861}:${CLAUDE_ROUTER_PORT:-17861}"
     volumes:
@@ -14,6 +15,9 @@ services:
         source: ${CLAUDE_ROUTER_DATA_DIR:?Set CLAUDE_ROUTER_DATA_DIR to the directory containing config.json}
         target: /data
         read_only: true
+      - type: volume
+        source: router-telemetry
+        target: /telemetry
     restart: unless-stopped
     read_only: true
     tmpfs:
@@ -23,3 +27,6 @@ services:
     security_opt:
       - no-new-privileges:true
     init: true
+
+volumes:
+  router-telemetry:

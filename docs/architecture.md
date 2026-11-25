@@ -57,7 +57,7 @@ Only hashes are retained in router memory. Raw task text is not logged.
 
 `src/decision-engine.mjs` owns two bounded in-memory maps:
 
-- sticky provider history, capped at 2,000 conversations;
+- bounded per-task provider/recovery state, capped at 2,000 conversations;
 - semantic decisions, capped at 1,000 task hashes.
 
 Both use insertion-order eviction. They disappear on restart; no conversation database is written to disk.
@@ -66,9 +66,11 @@ Resolution order:
 
 1. explicit selection;
 2. deterministic evidence/progress result;
-3. sticky Kimi if this is the same task and the current choice was not explicit;
+3. for a task already on Kimi, bounded sticky routing with checkpoint-based recovery probes;
 4. semantic triage for eligible unclassified tasks;
 5. DeepSeek fallback.
+
+`src/deescalation.mjs` defines recovery gates and capped exponential backoff. `src/progress.mjs` supplies a recent tool-activity window separate from cumulative escalation statistics. Probe outcomes are committed only after upstream completion: failed DeepSeek probes return to Kimi, while enough successful probes establish a recovered DeepSeek state. Hard capability requirements and explicit selections take precedence. Preview and token counting do not commit state.
 
 ### Semantic triage
 
@@ -85,7 +87,7 @@ Thinking is disabled deliberately: allowing the classifier to think can consume 
 
 `src/sanitize.mjs` always removes `redacted_thinking` blocks and removes `thinking` blocks when changing providers. This avoids forwarding provider-bound reasoning artifacts to a different upstream.
 
-`src/upstream.mjs` forwards the rewritten request to `${baseUrl}/v1/messages` or the token-count endpoint, sets provider authentication, propagates cancellation, and streams response bytes without parsing SSE. Router metadata is returned in `x-router-provider` and `x-router-source` response headers.
+`src/upstream.mjs` forwards the rewritten request to `${baseUrl}/v1/messages` or the token-count endpoint, sets provider authentication, propagates cancellation, and streams response bytes unchanged. A side-channel usage tap extracts token counters without retaining response text or altering SSE. Router metadata is returned in `x-router-provider` and `x-router-source` response headers.
 
 ## Configuration and secrets
 

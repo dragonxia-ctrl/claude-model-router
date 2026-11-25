@@ -80,7 +80,8 @@ flowchart LR
 | `src/classifier.mjs` | Explicit overrides, benchmark-advantage rules, progress rules |
 | `src/task-text.mjs` | Task extraction and follow-up inheritance |
 | `src/progress.mjs` | Read-only vs mutating tool analysis, failed verification detection, repeated errors |
-| `src/decision-engine.mjs` | Sticky provider, semantic-triage cache, confidence threshold |
+| `src/decision-engine.mjs` | Bounded Kimi residency, recovery probes, semantic-triage cache |
+| `src/deescalation.mjs` | Clean-window gates and capped exponential probe backoff |
 | `src/semantic.mjs` | One low-cost DeepSeek classification call with thinking disabled |
 | `src/sanitize.mjs` | Cross-provider thinking/redacted-thinking cleanup |
 | `src/upstream.mjs` | Streaming passthrough, auth headers, cancellation |
@@ -97,7 +98,7 @@ flowchart LR
    - explicit model/prompt override,
    - evidence-based Kimi advantage rules,
    - progress-aware escalation,
-   - sticky Kimi for the same task,
+   - sticky Kimi inside a tool-use loop, with checkpoint-based DeepSeek recovery probes,
    - optional semantic triage,
    - otherwise DeepSeek.
 5. The selected provider's model name replaces `auto`.
@@ -118,7 +119,9 @@ The default policy is intentionally conservative. It is based on public comparis
 | Difficult tool-assisted research | Kimi ahead on HLE-style tasks | Kimi for source-oriented multi-step research |
 | Frontier math, complex visual, video | Kimi advantage | Kimi |
 
-The exact rules and tuning knobs are documented in [docs/routing-policy.md](docs/routing-policy.md).
+Kimi residency is bounded rather than permanent. After four Kimi requests by default, a clean recent execution window and a new human checkpoint permit two DeepSeek probe requests. New failures return to Kimi with capped exponential backoff; video and complex visual requirements never automatically de-escalate. Explicit model selection still wins.
+
+The exact rules, tuning knobs, and open-source design references are documented in [docs/routing-policy.md](docs/routing-policy.md).
 
 ---
 
@@ -346,7 +349,19 @@ The active config lives at `~/.claude/model-router/config.json` and is never com
     "triageMinChars": 40,
     "triageConfidence": 0.8,
     "triageTimeoutMs": 8000,
-    "triageMaxInputChars": 6000
+    "triageMaxInputChars": 6000,
+    "deescalation": {
+      "enabled": true,
+      "minKimiRequests": 4,
+      "probeRequests": 2,
+      "maxAttempts": 3,
+      "maxBackoffRequests": 32
+    }
+  },
+  "telemetry": {
+    "persist": false,
+    "retentionDays": 30,
+    "maxFileBytes": 33554432
   }
 }
 ```
@@ -361,6 +376,8 @@ The active config lives at `~/.claude/model-router/config.json` and is never com
 | `routing.triageConfidence` | Minimum confidence needed to choose Kimi |
 | `routing.triageTimeoutMs` | Timeout for the classifier |
 | `routing.triageMaxInputChars` | Maximum task characters sent to the classifier |
+| `routing.deescalation` | Bounded Kimi residency, recovery probes, and backoff; see [routing policy](docs/routing-policy.md) |
+| `telemetry` | Optional private JSONL persistence, retention, and rotation; see [observability](docs/observability.md) |
 
 The semantic classifier receives only the current task text, truncated to the configured limit. It does not receive tool results, file contents, or the whole conversation.
 
@@ -387,11 +404,18 @@ Useful endpoints:
 
 | Endpoint | Purpose |
 | --- | --- |
-| `GET /health` | Health, config revision, semantic-triage state, provider readiness |
+| `GET /health` | Legacy health summary |
+| `GET /health/live` | Unauthenticated process liveness |
+| `GET /health/ready` | Configuration/provider readiness; 503 when no provider is configured |
+| `GET /health/deep` | Authenticated passive diagnostics; never spends provider tokens |
+| `GET /metrics` | Authenticated Prometheus request, token, routing, and recovery metrics |
+| `GET /metrics/json` | Authenticated JSON telemetry snapshot |
 | `GET /v1/models` | Claude Code model listing (`auto`, DeepSeek, Kimi) |
 | `POST /v1/router/preview` | Show routing decision without calling the selected upstream |
 | `POST /v1/messages` | Main proxied endpoint |
 | `POST /v1/messages/count_tokens` | Token counting through the selected provider |
+
+For health semantics, persistence/privacy, Prometheus examples, and the terminal usage probe above the turn-duration footer, see [docs/observability.md](docs/observability.md) and [mods/usage-probe](mods/usage-probe/README.md).
 
 ---
 
@@ -410,9 +434,11 @@ Current coverage includes:
 - follow-up task inheritance,
 - read-only vs mutating progress signals,
 - failed verification cycles, repeated errors, repeated mutations,
+- bounded Kimi residency, checkpoint probes, relapse, exponential backoff, and hard-capability locks,
 - semantic-triage success, cache, confidence threshold, and failure fallback,
 - config validation and hot reload,
 - HTTP auth, model rewrite, SSE, query-string compatibility, preview, stickiness,
+- health/metrics endpoints, real usage extraction, and pseudonymous telemetry persistence,
 - installer dry-run, settings merge, backups, rollback, and safe uninstall,
 - cross-platform path handling.
 

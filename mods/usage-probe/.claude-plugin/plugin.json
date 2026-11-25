@@ -1,0 +1,6 @@
+{
+  "name": "usage-probe",
+  "version": "0.1.0",
+  "description": "Shows real per-model token usage and request time immediately above the terminal turn-duration footer",
+  "author": { "name": "Claude Model Router contributors" }
+}

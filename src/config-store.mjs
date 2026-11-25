@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { DEESCALATION_DEFAULTS } from './deescalation.mjs';
 
 export const ROUTING_DEFAULTS = Object.freeze({
   semanticTriage: true,
@@ -41,6 +42,29 @@ export function normalizeConfig(raw) {
     if (routing.triageConfidence !== undefined) assert(typeof routing.triageConfidence === 'number' && routing.triageConfidence >= 0 && routing.triageConfidence <= 1, 'routing.triageConfidence must be between 0 and 1');
     if (routing.triageTimeoutMs !== undefined) assert(Number.isInteger(routing.triageTimeoutMs) && routing.triageTimeoutMs >= 250, 'routing.triageTimeoutMs must be at least 250');
     if (routing.triageMaxInputChars !== undefined) assert(Number.isInteger(routing.triageMaxInputChars) && routing.triageMaxInputChars >= 500, 'routing.triageMaxInputChars must be at least 500');
+    if (routing.deescalation !== undefined) {
+      assert(routing.deescalation && typeof routing.deescalation === 'object' && !Array.isArray(routing.deescalation), 'routing.deescalation must be an object');
+      const policy = routing.deescalation;
+      if (policy.enabled !== undefined) assert(typeof policy.enabled === 'boolean', 'routing.deescalation.enabled must be a boolean');
+      for (const key of ['minKimiRequests', 'probeRequests', 'maxAttempts', 'maxBackoffRequests', 'windowToolCalls', 'minRecentToolCalls', 'maxMutationRepeats']) {
+        if (policy[key] !== undefined) assert(Number.isInteger(policy[key]) && policy[key] >= 0, `routing.deescalation.${key} must be a non-negative integer`);
+      }
+      for (const key of ['minKimiRequests', 'probeRequests', 'maxBackoffRequests', 'windowToolCalls', 'maxMutationRepeats']) {
+        if (policy[key] !== undefined) assert(policy[key] >= 1, `routing.deescalation.${key} must be at least 1`);
+      }
+      if (policy.maxFailureRate !== undefined) assert(typeof policy.maxFailureRate === 'number' && policy.maxFailureRate >= 0 && policy.maxFailureRate <= 1, 'routing.deescalation.maxFailureRate must be between 0 and 1');
+      const merged = { ...DEESCALATION_DEFAULTS, ...policy };
+      assert(merged.maxBackoffRequests >= merged.minKimiRequests, 'routing.deescalation.maxBackoffRequests must be at least minKimiRequests');
+      assert(merged.minRecentToolCalls <= merged.windowToolCalls, 'routing.deescalation.minRecentToolCalls must not exceed windowToolCalls');
+    }
+  }
+  if (raw.telemetry !== undefined) {
+    assert(raw.telemetry && typeof raw.telemetry === 'object' && !Array.isArray(raw.telemetry), 'telemetry must be an object');
+    const telemetry = raw.telemetry;
+    if (telemetry.persist !== undefined) assert(typeof telemetry.persist === 'boolean', 'telemetry.persist must be a boolean');
+    if (telemetry.directory !== undefined) assert(typeof telemetry.directory === 'string' && telemetry.directory.length > 0, 'telemetry.directory must be a non-empty string');
+    if (telemetry.retentionDays !== undefined) assert(Number.isInteger(telemetry.retentionDays) && telemetry.retentionDays >= 1 && telemetry.retentionDays <= 3650, 'telemetry.retentionDays must be between 1 and 3650');
+    if (telemetry.maxFileBytes !== undefined) assert(Number.isInteger(telemetry.maxFileBytes) && telemetry.maxFileBytes >= 1024 * 1024, 'telemetry.maxFileBytes must be at least 1 MiB');
   }
   return raw;
 }

@@ -129,3 +129,93 @@ export function progressEscalations(stats, limits = {}) {
   }
   return reasons;
 }
+
+/**
+ * Statistics for the most recent tool activity only.
+ *
+ * Escalation is cumulative: once a task has demonstrated repeated failure, the
+ * fact remains true. De-escalation must not use those cumulative counters, or a
+ * recovered task could never leave Kimi. This window can recover.
+ */
+export function analyzeRecoveryWindow(messages, startIndex, windowToolCalls = 24) {
+  const events = [];
+  const allUses = new Map();
+
+  for (const message of messages.slice(Math.max(0, startIndex))) {
+    if (!Array.isArray(message?.content)) continue;
+    for (const block of message.content) {
+      if (block?.type === 'tool_use') {
+        const input = block.input || {};
+        const kind = block.name === 'Bash' ? commandKind(input.command)
+          : READ_TOOLS.has(block.name) ? 'read'
+          : MUTATING_TOOLS.has(block.name) ? 'mutating'
+          : 'other';
+        const use = {
+          type: 'use', id: block.id, kind, name: block.name,
+          signature: kind === 'mutating' ? signature(`${block.name}:${canonical(input)}`) : null,
+        };
+        allUses.set(block.id, use);
+        events.push(use);
+      } else if (block?.type === 'tool_result') {
+        events.push({
+          type: 'result',
+          id: block.tool_use_id,
+          isError: Boolean(block.is_error),
+          group: block.is_error ? errorGroup(block.content) : '',
+        });
+      }
+    }
+  }
+
+  const useIndices = [];
+  events.forEach((event, index) => { if (event.type === 'use') useIndices.push(index); });
+  const firstIndex = useIndices.length > windowToolCalls
+    ? useIndices[useIndices.length - windowToolCalls]
+    : 0;
+  const recent = events.slice(firstIndex);
+
+  let toolCalls = 0;
+  let failedResults = 0;
+  let failedVerifications = 0;
+  let successfulVerifications = 0;
+  let successfulMutations = 0;
+  let verificationCalls = 0;
+  let trailingFailures = 0;
+  const mutationCounts = new Map();
+  const errorCounts = new Map();
+
+  for (const event of recent) {
+    if (event.type === 'use') {
+      toolCalls += 1;
+      if (event.kind === 'verification') verificationCalls += 1;
+      if (event.kind === 'mutating') {
+        mutationCounts.set(event.signature, (mutationCounts.get(event.signature) || 0) + 1);
+      }
+      continue;
+    }
+    const use = allUses.get(event.id);
+    if (event.isError) {
+      failedResults += 1;
+      trailingFailures += 1;
+      if (use?.kind === 'verification') failedVerifications += 1;
+      if (event.group) errorCounts.set(event.group, (errorCounts.get(event.group) || 0) + 1);
+    } else {
+      trailingFailures = 0;
+      if (use?.kind === 'verification') successfulVerifications += 1;
+      if (use?.kind === 'mutating') successfulMutations += 1;
+    }
+  }
+
+  return {
+    toolCalls,
+    failedResults,
+    failedVerifications,
+    successfulVerifications,
+    successfulMutations,
+    verificationCalls,
+    trailingFailures,
+    repeatedErrorGroups: [...errorCounts.values()].filter(count => count >= 2).length,
+    maxMutationRepeats: Math.max(0, ...mutationCounts.values()),
+    failureRate: toolCalls ? failedResults / toolCalls : 0,
+  };
+}
