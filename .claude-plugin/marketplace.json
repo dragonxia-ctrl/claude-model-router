@@ -1,0 +1,20 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "claude-model-router",
+  "description": "Plugins for the local DeepSeek/Kimi Claude Code router",
+  "owner": {
+    "name": "dragonxia-ctrl"
+  },
+  "plugins": [
+    {
+      "name": "usage-probe",
+      "description": "Shows per-model token usage and model request time immediately above the terminal turn-duration footer",
+      "author": {
+        "name": "Claude Model Router contributors"
+      },
+      "category": "monitoring",
+      "source": "./mods/usage-probe",
+      "homepage": "https://github.com/dragonxia-ctrl/claude-model-router/tree/main/mods/usage-probe"
+    }
+  ]
+}

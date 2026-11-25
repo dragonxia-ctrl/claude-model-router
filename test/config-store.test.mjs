@@ -51,6 +51,34 @@ test('listener changes are reported and invalid reload preserves active config',
   assert.equal(store.get().router.port, 17862);
 });
 
+test('de-escalation policy validates ranges and backoff consistency', t => {
+  const file = fixture(t);
+  const next = valid();
+  next.routing = {
+    deescalation: {
+      enabled: true, minKimiRequests: 4, probeRequests: 2, maxAttempts: 3,
+      maxBackoffRequests: 32, windowToolCalls: 24, minRecentToolCalls: 4,
+      maxFailureRate: 0.1, maxMutationRepeats: 2,
+    },
+  };
+  fs.writeFileSync(file, JSON.stringify(next));
+  assert.equal(loadConfig(file).routing.deescalation.minKimiRequests, 4);
+
+  next.routing.deescalation.maxBackoffRequests = 2;
+  fs.writeFileSync(file, JSON.stringify(next));
+  assert.throws(() => loadConfig(file), /maxBackoffRequests/);
+
+  next.routing.deescalation.maxBackoffRequests = 32;
+  next.routing.deescalation.probeRequests = 0;
+  fs.writeFileSync(file, JSON.stringify(next));
+  assert.throws(() => loadConfig(file), /probeRequests/);
+
+  next.routing.deescalation.probeRequests = 2;
+  next.routing.deescalation.maxFailureRate = 1.5;
+  fs.writeFileSync(file, JSON.stringify(next));
+  assert.throws(() => loadConfig(file), /maxFailureRate/);
+});
+
 test('missing providers and short tokens are rejected', t => {
   const file = fixture(t);
   fs.writeFileSync(file, JSON.stringify({ router: { port: 17861, token: 'a'.repeat(64) }, providers: {} }));

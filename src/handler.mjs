@@ -3,16 +3,63 @@ import { sanitizeForProvider } from './sanitize.mjs';
 import { forward } from './upstream.mjs';
 import { authorized, json, error, readJson } from './http-utils.mjs';
 import { health, models } from './views.mjs';
+import { liveHealth, readinessHealth, deepHealth } from './health.mjs';
 import { createDecisionEngine } from './decision-engine.mjs';
+import { createTelemetry } from './telemetry.mjs';
 
 export function createHandler(configSource, options = {}) {
   const getConfig = typeof configSource === 'function' ? configSource : () => configSource;
-  const engine = createDecisionEngine(getConfig, options);
-  return async (req, res) => {
+  const telemetry = options.telemetry && typeof options.telemetry.recordRequest === 'function'
+    ? options.telemetry
+    : options.telemetry === false ? null : createTelemetry({
+      ...(getConfig().telemetry || {}),
+      ...(options.telemetryOptions || {}),
+    });
+  const engine = createDecisionEngine(getConfig, {
+    ...options,
+    onTriage(record) {
+      telemetry?.recordRequest?.({
+        at: new Date().toISOString(),
+        requestId: randomUUID(),
+        provider: record.provider,
+        model: record.model,
+        purpose: 'semantic_triage',
+        outcome: record.outcome,
+        durationMs: record.durationMs,
+        usage: record.usage,
+        errorKind: record.errorKind,
+      });
+      options.onTriage?.(record);
+    },
+  });
+  const handler = async (req, res) => {
     const requestId = randomUUID();
     try {
-      const pathname = new URL(req.url, 'http://localhost').pathname;
+      const url = new URL(req.url, 'http://localhost');
+      const pathname = url.pathname;
       if (req.method === 'GET' && pathname === '/health') { json(res, 200, health(getConfig())); return; }
+      if (req.method === 'GET' && pathname === '/health/live') { json(res, 200, liveHealth()); return; }
+      if (req.method === 'GET' && pathname === '/health/ready') {
+        const report = readinessHealth(getConfig());
+        json(res, report.ok ? 200 : 503, report);
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/health/deep') {
+        if (!authorized(req, getConfig().router.token)) { error(res, 401, 'authentication_error', 'Invalid local token'); return; }
+        json(res, 200, deepHealth(getConfig(), telemetry));
+        return;
+      }
+      if (req.method === 'GET' && (pathname === '/metrics' || pathname === '/metrics/json')) {
+        if (!authorized(req, getConfig().router.token)) { error(res, 401, 'authentication_error', 'Invalid local token'); return; }
+        if (!telemetry) { error(res, 503, 'telemetry_disabled', 'Telemetry is disabled'); return; }
+        if (pathname === '/metrics/json') json(res, 200, telemetry.snapshot());
+        else {
+          res.statusCode = 200;
+          res.setHeader('content-type', 'text/plain; version=0.0.4; charset=utf-8');
+          res.end(telemetry.renderPrometheus());
+        }
+        return;
+      }
       if (!authorized(req, getConfig().router.token)) {
         error(res, 401, 'authentication_error', 'Invalid local token'); return;
       }
@@ -22,7 +69,7 @@ export function createHandler(configSource, options = {}) {
       }
       let body = await readJson(req);
       const isPreview = pathname === '/v1/router/preview';
-      const { decision, previousProvider, config } = await engine.resolve(body, {
+      const { decision, previousProvider, config, state, transition } = await engine.resolve(body, {
         semantic: pathname === '/v1/messages' || isPreview,
       });
       const provider = { ...config.providers[decision.provider], name: decision.provider };
@@ -38,20 +85,36 @@ export function createHandler(configSource, options = {}) {
       }
       if (pathname === '/v1/messages') {
         body = sanitizeForProvider(body, previousProvider, decision.provider);
-        engine.remember(decision);
+        engine.remember(decision, state);
       }
       body.model = provider.model;
+      const route = {
+        selectedProvider: provider.name,
+        source: decision.source,
+        previousProvider: previousProvider || null,
+        escalated: Boolean(previousProvider && previousProvider !== provider.name && provider.name === 'kimi'),
+        deescalationOutcome: pathname === '/v1/messages' ? transition?.outcome || null : null,
+      };
       res.setHeader('x-router-provider', provider.name);
       res.setHeader('x-router-source', decision.source);
       console.log(JSON.stringify({
+        event: 'route_decision',
         time: new Date().toISOString(), requestId, provider: provider.name,
         model: provider.model, reason: decision.reason, source: decision.source,
         stream: Boolean(body.stream), stats: decision.stats || null,
       }));
-      await forward({ req, res, body, provider, requestId });
+      await forward({
+        req, res, body, provider, requestId, telemetry, route,
+        conversationKey: decision.conversationKey,
+        taskKey: decision.taskKey,
+        purpose: pathname === '/v1/messages/count_tokens' ? 'count_tokens' : 'main',
+        onOutcome: pathname === '/v1/messages' ? record => engine.observe(decision, record) : null,
+      });
     } catch (err) {
       if (!res.headersSent) error(res, 400, 'invalid_request_error', err.message);
       else res.destroy(err);
     }
   };
+  handler.telemetry = telemetry;
+  return handler;
 }

@@ -45,7 +45,7 @@ Claude Code 通常只为会话配置一个模型。但实际工作负载是混�
   - 很长的修改型工具调用序列；
   - 完全相同的修改操作不断重复。
 - 对较长且未被规则归类的任务，可选调用 DeepSeek 进行低成本语义分流。分流关闭 thinking、只返回小型 JSON、结果有缓存；任何错误、超时或低置信度都安全回退到 DeepSeek。
-- 同一任务一旦选择 Kimi，就保持供应商粘性，减少任务中途来回切换。
+- 同一任务的 Kimi 粘性有上限：在工具循环内避免切换，但在新的人工检查点且近期执行已恢复时，会试探性降级到 DeepSeek；失败则回退并指数退避。
 - 跨供应商时清理不兼容的 thinking / redacted_thinking 内容块。
 - 支持通过模型名或提示词中的 `[kimi]` / `[deepseek]` 显式指定供应商。
 
@@ -80,7 +80,8 @@ flowchart LR
 | `src/classifier.mjs` | 显式覆盖、benchmark 优势规则、进展规则 |
 | `src/task-text.mjs` | 提取主任务文本、短追问继承 |
 | `src/progress.mjs` | 区分只读/修改工具，识别失败验证、重复错误等信号 |
-| `src/decision-engine.mjs` | 供应商粘性、语义缓存、置信度阈值 |
+| `src/decision-engine.mjs` | 有界 Kimi 驻留、恢复探针、语义缓存 |
+| `src/deescalation.mjs` | 干净恢复窗口与有上限的指数退避 |
 | `src/semantic.mjs` | 单次 DeepSeek 低成本分类，关闭 thinking |
 | `src/sanitize.mjs` | 跨供应商 thinking 内容清理 |
 | `src/upstream.mjs` | SSE 流式透传、鉴权头、取消请求 |
@@ -97,7 +98,7 @@ flowchart LR
    - 模型名或提示词中的显式指定；
    - Kimi 明确优势任务规则；
    - 基于进展的升级信号；
-   - 同一任务的 Kimi 粘性；
+   - 工具循环内保持 Kimi 粘性，并在人工检查点执行 DeepSeek 恢复探针；
    - 可选语义分流；
    - 以上均不满足时使用 DeepSeek。
 5. 将 `auto` 替换为所选供应商的真实模型名。
@@ -118,7 +119,9 @@ flowchart LR
 | 困难工具辅助研究 | Kimi 在 HLE 类任务中有优势 | 面向来源核验的多步研究使用 Kimi |
 | 前沿数学、复杂视觉、视频 | Kimi 有优势 | Kimi |
 
-完整规则和可调参数见 [docs/routing-policy.md](docs/routing-policy.md)。
+Kimi 不再永久粘滞。默认完成 4 次 Kimi 请求后，如果近期执行窗口干净且出现新的人工检查点，会发起 2 次 DeepSeek 探针请求；出现新失败则回到 Kimi，并采用有上限的指数退避。视频和复杂视觉等硬能力需求不会自动降级，显式模型选择始终优先。
+
+完整规则、可调参数和开源设计参考见 [docs/routing-policy.md](docs/routing-policy.md)。
 
 ---
 
@@ -346,7 +349,19 @@ node bin/claude-router.mjs verify
     "triageMinChars": 40,
     "triageConfidence": 0.8,
     "triageTimeoutMs": 8000,
-    "triageMaxInputChars": 6000
+    "triageMaxInputChars": 6000,
+    "deescalation": {
+      "enabled": true,
+      "minKimiRequests": 4,
+      "probeRequests": 2,
+      "maxAttempts": 3,
+      "maxBackoffRequests": 32
+    }
+  },
+  "telemetry": {
+    "persist": false,
+    "retentionDays": 30,
+    "maxFileBytes": 33554432
   }
 }
 ```
@@ -361,6 +376,8 @@ node bin/claude-router.mjs verify
 | `routing.triageConfidence` | 选择 Kimi 所需的最低置信度 |
 | `routing.triageTimeoutMs` | 分类器超时 |
 | `routing.triageMaxInputChars` | 发送给分类器的最大任务字符数 |
+| `routing.deescalation` | 有界 Kimi 驻留、恢复探针与退避；详见[路由策略](docs/routing-policy.md) |
+| `telemetry` | 可选私有 JSONL 持久化、保留与轮转；详见[可观测性](docs/observability.md) |
 
 语义分类器只接收截断后的当前任务文本，不接收工具结果、文件内容或完整对话。
 
@@ -387,11 +404,29 @@ node bin/claude-router.mjs logs --tail 200
 
 | 端点 | 用途 |
 | --- | --- |
-| `GET /health` | 健康状态、配置版本、语义分流状态、供应商就绪状态 |
+| `GET /health` | 旧版健康摘要 |
+| `GET /health/live` | 无需鉴权的进程存活检查 |
+| `GET /health/ready` | 配置与供应商就绪状态；无可用供应商时返回 503 |
+| `GET /health/deep` | 鉴权后的被动诊断，不消耗供应商 token |
+| `GET /metrics` | 鉴权后的 Prometheus 请求、token、路由与恢复指标 |
+| `GET /metrics/json` | 鉴权后的 JSON 遥测快照 |
 | `GET /v1/models` | 向 Claude Code 暴露 `auto`、DeepSeek、Kimi |
 | `POST /v1/router/preview` | 只预览路由决策，不调用所选上游 |
 | `POST /v1/messages` | 主代理端点 |
 | `POST /v1/messages/count_tokens` | 通过所选供应商计算 token |
+
+健康语义、持久化与隐私、Prometheus 示例，以及位于回合耗时页脚上方的终端 usage probe，见 [docs/observability.md](docs/observability.md) 和 [mods/usage-probe](mods/usage-probe/README.md)。
+
+### 终端用量探针
+
+从仓库 marketplace 安装后重启 Claude Code：
+
+```text
+/plugin marketplace add dragonxia-ctrl/claude-model-router
+/plugin install usage-probe@claude-model-router
+```
+
+每个回合完成后，原生耗时页脚上方会显示 DeepSeek/Kimi 的 token 总量、比例和模型请求耗时；`/router-usage` 可查看详细拆分。该探针仅支持终端，不需要供应商 key。
 
 ---
 
@@ -410,9 +445,11 @@ npm test
 - 短追问任务继承；
 - 只读与修改型进展信号；
 - 验证失败、重复错误、重复修改；
+- 有界 Kimi 驻留、检查点探针、复发回退、指数退避与硬能力锁；
 - 语义分流成功、缓存、置信度阈值和失败回退；
 - 配置校验与热加载；
 - HTTP 鉴权、模型替换、SSE、查询参数兼容、预览与粘性；
+- 健康/指标端点、真实 usage 提取与匿名化遥测持久化；
 - 安装 dry-run、设置合并、备份、回滚和安全卸载；
 - 跨平台路径处理。
 

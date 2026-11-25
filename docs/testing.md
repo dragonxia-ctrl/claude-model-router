@@ -17,13 +17,24 @@ Suites:
 | `classifier.test.mjs` | Default policy, explicit overrides, evidence rules, false positives |
 | `progress.test.mjs` | Tool classification, verification failures, repeated errors/mutations |
 | `decision-engine.test.mjs` | Sticky history, semantic cache, confidence, fallback |
+| `deescalation.test.mjs` | Checkpoints, clean recovery, probe success/failure, relapse, backoff, hard locks |
 | `config-store.test.mjs` | Validation, reload, restart-required detection |
-| `handler.test.mjs` | Auth, HTTP routes, preview, model rewrite, streaming, sticky behavior |
+| `handler.test.mjs` | Auth, HTTP routes, preview, model rewrite, streaming, sticky/probe outcome integration |
+| `telemetry.test.mjs` | Health endpoints, real usage, Prometheus, JSONL retention and pseudonymization |
 | `install.test.mjs` | Settings merge, backup/manifest, rollback, uninstall |
 | `cli.test.mjs` | Dry-run-by-default, token-helper isolation, and safety help |
 | `doctor.test.mjs` | Healthy deployment checks and stale helper detection |
 
 Use only dummy endpoints and credentials in tests. Never point an offline test at a real provider.
+
+The terminal usage mod has a separate Claude Code harness:
+
+```bash
+claude plugin validate mods/usage-probe
+claude plugin test mods/usage-probe
+```
+
+These tests verify footer component ordering and usage formatting, not every Claude Code desktop/IDE surface. Record interactive terminal verification separately.
 
 ## Layer 2: isolated container tests
 

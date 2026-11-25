@@ -21,6 +21,22 @@
     "triageMinChars": 40,
     "triageConfidence": 0.8,
     "triageTimeoutMs": 8000,
-    "triageMaxInputChars": 6000
+    "triageMaxInputChars": 6000,
+    "deescalation": {
+      "enabled": true,
+      "minKimiRequests": 4,
+      "probeRequests": 2,
+      "maxAttempts": 3,
+      "maxBackoffRequests": 32,
+      "windowToolCalls": 24,
+      "minRecentToolCalls": 4,
+      "maxFailureRate": 0.1,
+      "maxMutationRepeats": 2
+    }
+  },
+  "telemetry": {
+    "persist": false,
+    "retentionDays": 30,
+    "maxFileBytes": 33554432
   }
 }

@@ -81,6 +81,63 @@ test('handler routes, authenticates, rewrites model and preserves SSE', async t 
   assert.equal(calls.at(-1).body.model, 'deepseek-flash');
 });
 
+test('upstream probe failure is committed and exported as a de-escalation metric', async t => {
+  const calls = [];
+  const deepseek = await mockProvider('deepseek', calls);
+  const kimi = await mockProvider('kimi', calls);
+  let failDeepseek = true;
+  const originalHandler = deepseek.server.listeners('request')[0];
+  deepseek.server.removeListener('request', originalHandler);
+  deepseek.server.on('request', async (req, res) => {
+    if (failDeepseek) {
+      failDeepseek = false;
+      for await (const chunk of req) { /* drain request */ }
+      res.statusCode = 503;
+      res.setHeader('content-type', 'application/json');
+      res.end(JSON.stringify({ error: { message: 'temporary failure' } }));
+      return;
+    }
+    originalHandler(req, res);
+  });
+  const config = {
+    router: { token: 'local-test-token' },
+    routing: {
+      semanticTriage: false,
+      deescalation: { minKimiRequests: 1, probeRequests: 1, minRecentToolCalls: 0 },
+    },
+    providers: {
+      deepseek: { baseUrl: deepseek.url, model: 'deepseek-flash', apiKey: 'ds-secret' },
+      kimi: { baseUrl: kimi.url, model: 'kimi-k3.1-pro', apiKey: 'kimi-secret' },
+    },
+  };
+  const router = http.createServer(createHandler(config));
+  const port = await listen(router);
+  t.after(async () => { await close(router); await close(deepseek.server); await close(kimi.server); });
+  const post = messages => fetch(`http://127.0.0.1:${port}/v1/messages`, {
+    method: 'POST',
+    headers: { authorization: 'Bearer local-test-token', 'content-type': 'application/json' },
+    body: JSON.stringify({ model: 'auto', messages }),
+  });
+  const initial = [{ role: 'user', content: '自主完成一个端到端完整项目' }];
+  const checkpoint = [...initial, { role: 'assistant', content: '第一阶段完成' }, { role: 'user', content: '继续' }];
+
+  let response = await post(initial);
+  assert.equal((await response.json()).provider, 'kimi');
+  response = await post(checkpoint);
+  assert.equal(response.status, 503);
+  assert.equal(response.headers.get('x-router-source'), 'deescalation_probe');
+  await response.text();
+  response = await post(checkpoint);
+  assert.equal(response.headers.get('x-router-source'), 'sticky');
+  assert.equal((await response.json()).provider, 'kimi');
+
+  response = await fetch(`http://127.0.0.1:${port}/metrics`, {
+    headers: { authorization: 'Bearer local-test-token' },
+  });
+  const metrics = await response.text();
+  assert.match(metrics, /claude_router_deescalation_total\{outcome="probe_failed"\} 1/);
+});
+
 test('preview is side-effect free and sticky routing avoids repeated triage', async t => {
   const calls = [];
   const deepseek = await mockProvider('deepseek', calls);
