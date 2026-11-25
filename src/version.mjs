@@ -59,6 +59,7 @@ export function createUpdateChecker({
   cachePath = null,
   fetchImpl = globalThis.fetch,
   endpoint = `https://api.github.com/repos/${REPOSITORY}/releases/latest`,
+  packageEndpoint = `https://raw.githubusercontent.com/${REPOSITORY}/main/package.json`,
   tagsEndpoint = `https://api.github.com/repos/${REPOSITORY}/tags`,
   intervalMs = DEFAULT_INTERVAL_MS,
   timeoutMs = DEFAULT_TIMEOUT_MS,
@@ -126,6 +127,14 @@ export function createUpdateChecker({
       if (parseVersion(release?.tag_name)) return release.tag_name;
     } catch (error) {
       logger('version_release_lookup_failed', error);
+    }
+    try {
+      // Repositories without GitHub releases still publish the released
+      // version on main; this keeps "latest" useful out of the box.
+      const pkg = await fetchJson(packageEndpoint);
+      if (parseVersion(pkg?.version)) return pkg.version;
+    } catch (error) {
+      logger('version_package_lookup_failed', error);
     }
     try {
       const tags = await fetchJson(tagsEndpoint);
