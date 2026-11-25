@@ -23,7 +23,7 @@ The single table to read if you only read one thing. "Kimi share" is measured on
 | **Kimi share with `routing.limits.mutatingCalls: 40`** | — | **3.2%** of requests / 3.9% of tokens |
 | **First escalation in that task** | 10:47 (21 “mutating” calls, mostly reads) | 11:16 (20 real writes) |
 | **Version visibility in Claude Code** | None; `/health` exposed only an internal schema number | Native status line `router v1.2.0 · latest v…` (amber when an update exists), `GET /version`, `claude-router version` (`src/version.mjs`, `scripts/version-status.mjs`) |
-| **Tests** | 49 | **68** (19 added) |
+| **Tests** | 49 | **76** (27 added) |
 
 Both versions share the same defaults and safety model: DeepSeek is the default; Kimi needs evidence, progress signals, or a confident semantic triage; video/visual capabilities never de-escalate; a failed probe returns to Kimi with exponential backoff.
 
@@ -42,7 +42,7 @@ Both versions share the same defaults and safety model: DeepSeek is the default;
 
 **Fix.** Read-only command detection in `src/progress.mjs`; mid-turn recovery checkpoints in `src/decision-engine.mjs`; audit fields in `src/handler.mjs`. Six regression tests added; one existing test updated because a clean window now probes before the next user message.
 
-**Also added.** Version visibility: the router reports its running release and the latest published release on `GET /version`, caches the update check locally (startup, then at most every six hours, silent when offline), and `scripts/version-status.mjs` renders it in Claude Code's native status line — dimmed while up to date, amber when an upgrade exists. `claude-router version` shows the same state outside Claude Code. Thirteen tests cover the update checker, the endpoint, and the status line output.
+**Also added.** Version visibility: the router reports its running release and the latest published release on `GET /version`, caches the update check locally (startup, then at most every six hours, silent when offline), and `scripts/version-status.mjs` renders it in Claude Code's native status line — dimmed while up to date, amber when an upgrade exists. `claude-router version` shows the same state outside Claude Code. `claude-router update` pulls `main`, verifies the commit, runs the offline tests, deploys with a backup, restarts, and verifies the live router, rolling back on failure. Fourteen tests cover the update checker, the `/version` endpoint, and the status line output; seven cover the updater.
 
 ---
 

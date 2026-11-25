@@ -16,6 +16,7 @@ The version area with the problem analysis and measured evidence lives in [VERSI
 - `route_decision` logs now carry `conversationKey`, `taskKey`, and `deescalationOutcome`, so a routing decision can be attributed to a session and a de-escalation attempt.
 - `GET /version` reports the running release, the latest published release, and update availability; `/health` also carries `release`. The router checks its own GitHub releases at startup and at most every six hours (falling back to the `package.json` version on `main` through the GitHub contents API, then tags), caches the answer, and stays silent when offline.
 - `scripts/version-status.mjs` shows `router v<current> · latest v<published>` in Claude Code's native status line and highlights the line when an update is available; `claude-router version` prints the same state outside Claude Code. The status line helper reads only the local cache file.
+- `claude-router update` (`scripts/router-update.mjs`) updates a service install from GitHub in one step: pull `main`, verify the commit and release, run the offline tests, deploy with a backup, restart, and verify health, `/version`, and a routing preview; roll back on failure.
 - `VERSIONS.md` and `docs/versions/`: per-version reports with reproducible measurements and generated figures.
 - Five regression tests for command classification and mid-turn recovery, plus one for the log fields.
 
