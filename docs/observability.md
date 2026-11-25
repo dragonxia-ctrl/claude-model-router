@@ -87,6 +87,13 @@ The displayed token total is the sum of input, output, cache-read, and cache-cre
 
 The footer integration is terminal-only; desktop and IDE surfaces do not use the terminal `TurnDuration` renderer. Plugin tests verify component ordering, but rendering can remain version-dependent across Claude Code releases.
 
+Install it from the repository marketplace, then restart Claude Code:
+
+```text
+/plugin marketplace add dragonxia-ctrl/claude-model-router
+/plugin install usage-probe@claude-model-router
+```
+
 Development and validation:
 
 ```bash

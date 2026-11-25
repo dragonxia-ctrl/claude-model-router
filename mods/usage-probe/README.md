@@ -4,6 +4,15 @@ A terminal-only Claude Code mod that places real DeepSeek/Kimi token usage and m
 
 ## Use
 
+Install from this repository's marketplace:
+
+```text
+/plugin marketplace add dragonxia-ctrl/claude-model-router
+/plugin install usage-probe@claude-model-router
+```
+
+Restart Claude Code after installation. For local development without installing:
+
 ```bash
 claude --plugin-dir "$PWD/mods/usage-probe"
 ```

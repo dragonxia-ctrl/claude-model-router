@@ -417,6 +417,17 @@ node bin/claude-router.mjs logs --tail 200
 
 健康语义、持久化与隐私、Prometheus 示例，以及位于回合耗时页脚上方的终端 usage probe，见 [docs/observability.md](docs/observability.md) 和 [mods/usage-probe](mods/usage-probe/README.md)。
 
+### 终端用量探针
+
+从仓库 marketplace 安装后重启 Claude Code：
+
+```text
+/plugin marketplace add dragonxia-ctrl/claude-model-router
+/plugin install usage-probe@claude-model-router
+```
+
+每个回合完成后，原生耗时页脚上方会显示 DeepSeek/Kimi 的 token 总量、比例和模型请求耗时；`/router-usage` 可查看详细拆分。该探针仅支持终端，不需要供应商 key。
+
 ---
 
 ## 测试

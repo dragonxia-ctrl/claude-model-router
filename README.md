@@ -417,6 +417,17 @@ Useful endpoints:
 
 For health semantics, persistence/privacy, Prometheus examples, and the terminal usage probe above the turn-duration footer, see [docs/observability.md](docs/observability.md) and [mods/usage-probe](mods/usage-probe/README.md).
 
+### Terminal usage probe
+
+Install the bundled terminal mod from the repository marketplace, then restart Claude Code:
+
+```text
+/plugin marketplace add dragonxia-ctrl/claude-model-router
+/plugin install usage-probe@claude-model-router
+```
+
+After each completed turn it shows DeepSeek/Kimi token totals, token ratios, and model-request time immediately above the native turn-duration footer. `/router-usage` shows the detailed breakdown. The probe is terminal-only and does not need provider keys.
+
 ---
 
 ## Testing
