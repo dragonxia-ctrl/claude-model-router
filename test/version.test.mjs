@@ -85,14 +85,14 @@ test('the checker falls back to the package version on main when no release exis
     fetchImpl: async url => {
       urls.push(url);
       if (url.endsWith('/releases/latest')) return response({ message: 'Not Found' }, false, 404);
-      return response({ version: '1.2.0' });
+      return response({ content: Buffer.from(JSON.stringify({ version: '1.2.0' })).toString('base64') });
     },
   });
   const info = await checker.refresh({ force: true });
   assert.equal(info.latest, '1.2.0');
   assert.equal(info.status, 'current');
   assert.equal(urls.length, 2);
-  assert.match(urls[1], /raw\.githubusercontent\.com\/dragonxia-ctrl\/claude-model-router\/main\/package\.json$/);
+  assert.match(urls[1], /api\.github\.com\/repos\/dragonxia-ctrl\/claude-model-router\/contents\/package\.json\?ref=main$/);
 });
 
 test('the checker falls back to tags when no release exists and picks the highest', async t => {

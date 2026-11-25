@@ -5,7 +5,7 @@ export const ROUTER_VERSION = '1.2.0';
 export const REPOSITORY = 'dragonxia-ctrl/claude-model-router';
 
 const DEFAULT_INTERVAL_MS = 6 * 60 * 60 * 1000;
-const DEFAULT_TIMEOUT_MS = 3000;
+const DEFAULT_TIMEOUT_MS = 5000;
 
 export function parseVersion(value) {
   const match = /^v?(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?$/.exec(String(value ?? '').trim());
@@ -59,7 +59,7 @@ export function createUpdateChecker({
   cachePath = null,
   fetchImpl = globalThis.fetch,
   endpoint = `https://api.github.com/repos/${REPOSITORY}/releases/latest`,
-  packageEndpoint = `https://raw.githubusercontent.com/${REPOSITORY}/main/package.json`,
+  packageEndpoint = `https://api.github.com/repos/${REPOSITORY}/contents/package.json?ref=main`,
   tagsEndpoint = `https://api.github.com/repos/${REPOSITORY}/tags`,
   intervalMs = DEFAULT_INTERVAL_MS,
   timeoutMs = DEFAULT_TIMEOUT_MS,
@@ -130,8 +130,14 @@ export function createUpdateChecker({
     }
     try {
       // Repositories without GitHub releases still publish the released
-      // version on main; this keeps "latest" useful out of the box.
-      const pkg = await fetchJson(packageEndpoint);
+      // version on main. The contents API is used instead of
+      // raw.githubusercontent.com because only api.github.com is reachable
+      // from some networks.
+      const file = await fetchJson(packageEndpoint);
+      const text = file?.content
+        ? Buffer.from(String(file.content).replace(/\s/g, ''), 'base64').toString('utf8')
+        : null;
+      const pkg = text ? JSON.parse(text) : null;
       if (parseVersion(pkg?.version)) return pkg.version;
     } catch (error) {
       logger('version_package_lookup_failed', error);
