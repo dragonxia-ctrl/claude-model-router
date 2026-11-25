@@ -76,6 +76,25 @@ test('the checker fetches the latest release and persists it', async t => {
   assert.equal(persisted.latest, 'v1.3.0');
 });
 
+test('the checker falls back to the package version on main when no release exists', async t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'router-version-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const urls = [];
+  const checker = createUpdateChecker({
+    cachePath: path.join(dir, 'version-cache.json'),
+    fetchImpl: async url => {
+      urls.push(url);
+      if (url.endsWith('/releases/latest')) return response({ message: 'Not Found' }, false, 404);
+      return response({ content: Buffer.from(JSON.stringify({ version: '1.2.0' })).toString('base64') });
+    },
+  });
+  const info = await checker.refresh({ force: true });
+  assert.equal(info.latest, '1.2.0');
+  assert.equal(info.status, 'current');
+  assert.equal(urls.length, 2);
+  assert.match(urls[1], /api\.github\.com\/repos\/dragonxia-ctrl\/claude-model-router\/contents\/package\.json\?ref=main$/);
+});
+
 test('the checker falls back to tags when no release exists and picks the highest', async t => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'router-version-'));
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
