@@ -4,6 +4,23 @@ All notable changes are documented here. The format follows Keep a Changelog and
 
 The version area with the problem analysis and measured evidence lives in [VERSIONS.md](VERSIONS.md).
 
+## [1.5.0] - 2026-11-26
+
+### Changed
+
+- Mid-turn recovery reviews no longer depend on tool-call count alone. While a task is on Kimi, the clean-window review now runs after `windowToolCalls` (12, was 24) new tool calls, `windowRequests` (6) Kimi requests, or `windowMs` (5 minutes), whichever comes first. Replayed against the live log, 28 of 38 sticky runs would have had at least one checkpoint opportunity instead of 5, with 68 opportunities instead of 6.
+- `maxBackoffRequests` is capped at 16 (was 32), halving the longest post-failure Kimi residency a failed probe can require.
+- Exhausting `maxAttempts` now ends the backoff cycle rather than permanently stopping recovery: after `retryAfterExhaustedRequests` (16) Kimi requests, a clean checkpoint may start a new probe cycle. Set it to `0` to keep the previous stop-after-attempts behaviour.
+- The recovery window size and mid-turn review interval share `windowToolCalls`; with 12, the clean-window judgement uses the most recent 12 tool calls instead of the most recent 24.
+
+### Added
+
+- `GET /v1/router/state` and `POST /v1/router/deescalate` (local bearer token), with `claude-router state` and `claude-router deescalate --conversation <key> | --all`: inspect in-memory residency and schedule a recovery checkpoint. A manual request still has to pass the clean-window and hard-capability gates.
+- `route_decision` logs carry `deescalationCheckpoint` (`user`, `tool_window`, `request_window`, `idle_window`, `manual`), `kimiRequests`, and `requiredKimiRequests`; probe requests write a `deescalation_probe_outcome` line with `outcome`, `httpStatus`, `errorKind`, `attempts`, and `requiredKimiRequests`.
+- `docs/versions/v4-to-v5.md`, `docs/versions/data/v4-v5.json`, and `docs/versions/replay-v5.mjs`: the v4→v5 report, its replay data, and the script that regenerates it from `router.log`.
+
+Unchanged: escalation evidence, the default provider, explicit model selection, hard video capability, probe length (2), clean-window thresholds, and the 4-request minimum residency. See [docs/versions/v4-to-v5.md](docs/versions/v4-to-v5.md).
+
 ## [1.4.0] - 2026-11-26
 
 ### Added

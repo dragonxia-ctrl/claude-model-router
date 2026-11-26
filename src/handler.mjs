@@ -84,12 +84,36 @@ export function createHandler(configSource, options = {}) {
         error(res, 401, 'authentication_error', 'Invalid local token'); return;
       }
       if (req.method === 'GET' && pathname === '/v1/models') { json(res, 200, models(getConfig())); return; }
+      if (req.method === 'GET' && pathname === '/v1/router/state') {
+        json(res, 200, { states: engine.routingState() });
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/v1/router/deescalate') {
+        const request = await readJson(req);
+        const all = request.all === true;
+        const conversationKey = typeof request.conversationKey === 'string' ? request.conversationKey : null;
+        if (!all && !conversationKey) {
+          error(res, 400, 'invalid_request_error', 'Provide conversationKey or {"all":true}');
+          return;
+        }
+        const changed = engine.requestDeescalation({ conversationKey, all });
+        console.log(JSON.stringify({
+          event: 'deescalation_requested', time: new Date().toISOString(),
+          all, conversationKey: conversationKey || null, changed: changed.length,
+        }));
+        if (!all && changed.length === 0) {
+          error(res, 404, 'not_found_error', 'No active Kimi state for this conversation');
+          return;
+        }
+        json(res, 200, { ok: true, changed: changed.length, conversationKeys: changed });
+        return;
+      }
       if (req.method !== 'POST' || !['/v1/messages', '/v1/messages/count_tokens', '/v1/router/preview'].includes(pathname)) {
         error(res, 404, 'not_found_error', 'Unsupported endpoint'); return;
       }
       let body = await readJson(req);
       const isPreview = pathname === '/v1/router/preview';
-      const { decision, previousProvider, config, state, transition } = await engine.resolve(body, {
+      const { decision, previousProvider, config, state, transition, checkpoint } = await engine.resolve(body, {
         semantic: pathname === '/v1/messages' || isPreview,
       });
       const provider = { ...config.providers[decision.provider], name: decision.provider };
@@ -127,6 +151,9 @@ export function createHandler(configSource, options = {}) {
         hardCapability: decision.hardCapability ?? null,
         media: decision.media || null,
         deescalationOutcome: transition?.outcome || null,
+        deescalationCheckpoint: checkpoint || null,
+        kimiRequests: state?.kimiRequests ?? null,
+        requiredKimiRequests: state?.requiredKimiRequests ?? null,
       }));
       await forward({
         req, res, body, provider, requestId, telemetry, route,

@@ -102,7 +102,7 @@ test('explicit model choice wins', () => {
   assert.equal(classifyRequest(request('自主完成完整项目', { model: 'deepseek-flash' })).provider, 'deepseek');
 });
 
-test('provider switch strips incompatible thinking only', () => {
+test('provider switch strips incompatible thinking and adds a DeepSeek reasoning placeholder', () => {
   const body = { messages: [{ role: 'assistant', content: [
     { type: 'thinking', thinking: 'reasoning', signature: 'sig' },
     { type: 'redacted_thinking', data: 'opaque' },
@@ -110,5 +110,10 @@ test('provider switch strips incompatible thinking only', () => {
   ] }] };
   assert.equal(sanitizeForProvider(body, 'kimi', 'kimi').messages[0].content.length, 3);
   const switched = sanitizeForProvider(body, 'kimi', 'deepseek');
-  assert.deepEqual(switched.messages[0].content, [{ type: 'text', text: 'answer' }]);
+  assert.deepEqual(switched.messages[0].content, [
+    { type: 'thinking', thinking: ' ', signature: '' },
+    { type: 'text', text: 'answer' },
+  ]);
+  const unchanged = sanitizeForProvider(body, 'deepseek', 'deepseek');
+  assert.equal(unchanged.messages[0].content[0].thinking, 'reasoning');
 });

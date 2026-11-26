@@ -19,6 +19,7 @@ import {
 } from '../scripts/lib/docker.mjs';
 import { planSettingsPatch, readJsonFile } from '../scripts/lib/settings.mjs';
 import { doctorExitCode } from '../scripts/lib/doctor.mjs';
+import { controlRequest } from '../scripts/router-control.mjs';
 
 const PROVIDERS = [
   { name: 'kimi', label: 'Kimi', env: 'CLAUDE_ROUTER_KIMI_KEY' },
@@ -35,7 +36,7 @@ function parseFlags(argv) {
     const name = equals === -1 ? body : body.slice(0, equals);
     if (equals !== -1) {
       flags[name] = body.slice(equals + 1);
-    } else if (['apply', 'force', 'no-start', 'no-restart', 'allow-root', 'help', 'json', 'yes'].includes(name)) {
+    } else if (['apply', 'force', 'no-start', 'no-restart', 'allow-root', 'help', 'json', 'yes', 'all'].includes(name)) {
       flags[name] = true;
     } else {
       const value = argv[i + 1];
@@ -348,6 +349,29 @@ async function versionCommand(flags) {
   return 0;
 }
 
+async function stateCommand(flags) {
+  const { config } = loadRuntimeConfig(flags);
+  const result = await controlRequest(config, '/v1/router/state');
+  if (flags.json) console.log(JSON.stringify(result, null, 2));
+  else if (!result.states.length) console.log('No in-memory routing state.');
+  else for (const state of result.states) {
+    console.log(`${state.conversationKey.slice(0, 12)}  ${state.provider}/${state.phase}  kimi=${state.kimiRequests}/${state.requiredKimiRequests}  attempts=${state.attempts}${state.forced ? '  forced-checkpoint' : ''}`);
+  }
+  return 0;
+}
+
+async function deescalateCommand(flags) {
+  if (!flags.all && !flags.conversation) throw new Error('Use --conversation <key> or --all');
+  const { config } = loadRuntimeConfig(flags);
+  const result = await controlRequest(config, '/v1/router/deescalate', {
+    all: Boolean(flags.all),
+    ...(flags.conversation ? { conversationKey: flags.conversation } : {}),
+  });
+  console.log(`Scheduled a recovery checkpoint for ${result.changed} conversation(s).`);
+  console.log('The next main request still must pass the clean-window and hard-capability gates.');
+  return 0;
+}
+
 function help() {
   console.log(`Claude Model Router ${PACKAGE_VERSION}
 
@@ -363,6 +387,8 @@ Commands:
   token-helper     Generate only the local token helper; do not change settings
   status           Show router health
   version          Show CLI and running router version plus the latest release
+  state            Show in-memory provider residency and probe state
+  deescalate       Schedule DeepSeek recovery (--conversation <key> or --all)
   doctor           Check Node, config, settings, helper, Docker, and router health
   deploy           Build and start the Docker container
   restart          Restart the Docker container
@@ -409,6 +435,8 @@ async function main() {
     case 'verify': return verifyCommand(flags, false);
     case 'verify-live': return verifyCommand(flags, true);
     case 'version': return versionCommand(flags);
+    case 'state': return stateCommand(flags);
+    case 'deescalate': return deescalateCommand(flags);
     default:
       help();
       return 2;

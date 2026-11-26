@@ -181,6 +181,9 @@ test('route_decision log carries audit keys and de-escalation outcome', async t 
   assert.deepEqual(decision.media, { video: false, image: false });
   assert.equal(decision.hardCapability, false);
   assert.deepEqual(decision.capabilityKinds, []);
+  assert.equal(decision.deescalationCheckpoint, null);
+  assert.equal(decision.kimiRequests, 0);
+  assert.equal(decision.requiredKimiRequests, 0);
 });
 
 test('preview is side-effect free and sticky routing avoids repeated triage', async t => {
@@ -231,6 +234,64 @@ test('preview is side-effect free and sticky routing avoids repeated triage', as
   assert.equal(response.headers.get('x-router-provider'), 'kimi');
   await response.text();
   assert.equal(triageCalls, 1, 'preview result is cached; sticky follow-up does not re-triage');
+});
+
+test('authenticated state and deescalate endpoints provide an operator exit', async t => {
+  const calls = [];
+  const deepseek = await mockProvider('deepseek', calls);
+  const kimi = await mockProvider('kimi', calls);
+  const config = {
+    router: { token: 'local-test-token' },
+    routing: {
+      semanticTriage: false,
+      deescalation: {
+        minKimiRequests: 1, probeRequests: 1, minRecentToolCalls: 0,
+        windowRequests: 100, windowMs: 600_000,
+      },
+    },
+    providers: {
+      deepseek: { baseUrl: deepseek.url, model: 'deepseek-flash', apiKey: 'ds-secret' },
+      kimi: { baseUrl: kimi.url, model: 'kimi-k3.1-pro', apiKey: 'kimi-secret' },
+    },
+  };
+  const router = http.createServer(createHandler(config));
+  const port = await listen(router);
+  t.after(async () => { await close(router); await close(deepseek.server); await close(kimi.server); });
+  const url = `http://127.0.0.1:${port}`;
+  const auth = { authorization: 'Bearer local-test-token', 'content-type': 'application/json' };
+  const messages = [{ role: 'user', content: '自主完成一个端到端完整项目' }];
+
+  let response = await fetch(`${url}/v1/messages`, {
+    method: 'POST', headers: auth, body: JSON.stringify({ model: 'auto', stream: true, messages }),
+  });
+  assert.equal(response.headers.get('x-router-provider'), 'kimi');
+  await response.text();
+
+  assert.equal((await fetch(`${url}/v1/router/state`)).status, 401);
+  let state = await (await fetch(`${url}/v1/router/state`, { headers: auth })).json();
+  assert.equal(state.states.length, 1);
+  assert.equal(state.states[0].phase, 'kimi');
+  const conversationKey = state.states[0].conversationKey;
+
+  response = await fetch(`${url}/v1/router/deescalate`, {
+    method: 'POST', headers: auth, body: JSON.stringify({ conversationKey }),
+  });
+  assert.equal(response.status, 200);
+  assert.deepEqual((await response.json()).conversationKeys, [conversationKey]);
+
+  response = await fetch(`${url}/v1/messages`, {
+    method: 'POST', headers: auth, body: JSON.stringify({ model: 'auto', stream: true, messages }),
+  });
+  assert.equal(response.headers.get('x-router-provider'), 'deepseek');
+  assert.equal(response.headers.get('x-router-source'), 'deescalation_probe');
+  await response.text();
+  state = await (await fetch(`${url}/v1/router/state`, { headers: auth })).json();
+  assert.equal(state.states[0].recovered, true);
+
+  response = await fetch(`${url}/v1/router/deescalate`, {
+    method: 'POST', headers: auth, body: JSON.stringify({ conversationKey }),
+  });
+  assert.equal(response.status, 404);
 });
 
 test('version endpoint reports the running release and update state without auth', async t => {

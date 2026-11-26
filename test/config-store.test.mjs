@@ -58,6 +58,7 @@ test('de-escalation policy validates ranges and backoff consistency', t => {
     deescalation: {
       enabled: true, minKimiRequests: 4, probeRequests: 2, maxAttempts: 3,
       maxBackoffRequests: 32, windowToolCalls: 24, minRecentToolCalls: 4,
+      windowRequests: 6, windowMs: 300_000, retryAfterExhaustedRequests: 16,
       maxFailureRate: 0.1, maxMutationRepeats: 2,
     },
   };
@@ -77,6 +78,16 @@ test('de-escalation policy validates ranges and backoff consistency', t => {
   next.routing.deescalation.maxFailureRate = 1.5;
   fs.writeFileSync(file, JSON.stringify(next));
   assert.throws(() => loadConfig(file), /maxFailureRate/);
+
+  next.routing.deescalation.maxFailureRate = 0.1;
+  next.routing.deescalation.windowRequests = 0;
+  fs.writeFileSync(file, JSON.stringify(next));
+  assert.throws(() => loadConfig(file), /windowRequests/);
+
+  next.routing.deescalation.windowRequests = 6;
+  next.routing.deescalation.retryAfterExhaustedRequests = 0;
+  fs.writeFileSync(file, JSON.stringify(next));
+  assert.equal(loadConfig(file).routing.deescalation.retryAfterExhaustedRequests, 0);
 });
 
 test('missing providers and short tokens are rejected', t => {

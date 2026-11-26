@@ -28,6 +28,7 @@ function writeRepo(root, version) {
   write(path.join(root, 'src', 'version.mjs'), `export const ROUTER_VERSION = '${version}';\n`);
   write(path.join(root, 'src', 'router.mjs'), '// router\n');
   write(path.join(root, 'scripts', 'version-status.mjs'), '// status\n');
+  write(path.join(root, 'scripts', 'router-control.mjs'), '// control\n');
   fs.copyFileSync(script, path.join(root, 'scripts', 'router-update.mjs'));
 }
 
@@ -177,7 +178,7 @@ test('expectedVersion requires package.json and src/version.mjs to agree', t => 
   assert.throws(() => expectedVersion(root), /Version mismatch/);
 });
 
-test('deploy plan covers src and the two helper scripts, never config', () => {
+test('deploy plan covers src and the three helper scripts, never config', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'router-plan-'));
   try {
     writeRepo(root, '1.2.0');
@@ -186,6 +187,7 @@ test('deploy plan covers src and the two helper scripts, never config', () => {
     assert.ok(plan.has('version.mjs'));
     assert.ok(plan.has('version-status.mjs'));
     assert.ok(plan.has('router-update.mjs'));
+    assert.ok(plan.has('router-control.mjs'));
     assert.ok(![...plan.keys()].some(name => name.includes('config')));
   } finally {
     fs.rmSync(root, { recursive: true, force: true });

@@ -66,6 +66,19 @@ Each routed request writes one `route_decision` JSON line to `router.log`:
 | `conversationKey`, `taskKey` | Pseudonymous session/task identifiers for replay and correlation |
 | `capabilityKinds`, `hardCapability`, `media` | Which benchmark/capability rules fired, whether any of them blocks de-escalation, and which media block kinds were actually present (`video`, `image`) |
 | `deescalationOutcome` | Probe, relapse, blocked-window, or capability-block outcome |
+| `deescalationCheckpoint` | Which checkpoint opened this review: `user`, `tool_window`, `request_window`, `idle_window`, `manual`, or `null` |
+| `kimiRequests`, `requiredKimiRequests` | Kimi requests served in the current residency, and the residency still required before a probe |
+
+Each failed or successful DeepSeek probe also writes a `deescalation_probe_outcome` line with `outcome`, `httpStatus`, `errorKind`, `attempts`, and `requiredKimiRequests`, so probe failures are attributable without recording response bodies.
+
+### Routing-state control endpoints
+
+| Endpoint | Authentication | Purpose |
+| --- | --- | --- |
+| `GET /v1/router/state` | Local bearer token | In-memory residency/probe state per conversation (no task text) |
+| `POST /v1/router/deescalate` | Local bearer token | Schedule a recovery checkpoint (`conversationKey`, or `all: true`) |
+
+Both require the local bearer token and are intended for the loopback/private interface only; they are not part of the Anthropic-compatible API surface.
 
 Prompts, file contents, and API keys are never logged. `media` is a boolean pair, not a media payload, so the log answers "did this request really contain video" without storing it.
 

@@ -108,7 +108,7 @@ flowchart LR
 6. Incompatible thinking blocks are removed if providers switch.
 7. The request is forwarded upstream with the provider's key.
 8. Response status, content type, SSE chunks, and retry headers are passed back unchanged.
-9. A structured log line records provider, reason, source, stream flag, progress stats, conversation/task keys, capability/media kinds, and the de-escalation outcome. Prompts and API keys are not logged.
+9. A structured log line records provider, reason, source, stream flag, progress stats, conversation/task keys, capability/media kinds, the de-escalation checkpoint and outcome, and Kimi residency counters. Prompts and API keys are not logged.
 
 ### Routing policy
 
@@ -123,7 +123,7 @@ The default policy is intentionally conservative. It is based on public comparis
 | Frontier math, complex visual reasoning | Kimi advantage | Kimi |
 | Video media blocks | Only Kimi can consume video | Kimi (hard, never de-escalates) |
 
-Kimi residency is bounded rather than permanent. After four Kimi requests by default, a clean recent execution window at a recovery checkpoint permits two DeepSeek probe requests. A checkpoint is a new human message or — inside a long tool-use turn — every 24 new tool calls, so a single long turn no longer pins Kimi indefinitely. New failures return to Kimi with capped exponential backoff; only actual video media never automatically de-escalates. A text mention of video is not a capability requirement, and non-streaming auxiliary calls stay on the default provider. Explicit model selection still wins.
+Kimi residency is bounded rather than permanent. After four Kimi requests by default, a clean recent execution window at a recovery checkpoint permits two DeepSeek probe requests. A checkpoint is a new human message, or — inside a long tool-use turn — every 12 new tool calls, every 6 Kimi requests, or every 5 minutes of the same task, whichever comes first. New failures return to Kimi with capped exponential backoff; after three failed probes, recovery is retried at the first clean checkpoint past 16 Kimi requests rather than stopping forever. Only actual video media never automatically de-escalates. A text mention of video is not a capability requirement, and non-streaming auxiliary calls stay on the default provider. Explicit model selection still wins. `claude-router state` and `claude-router deescalate` expose the live residency state and a manual recovery checkpoint.
 
 The exact rules, tuning knobs, and open-source design references are documented in [docs/routing-policy.md](docs/routing-policy.md).
 
@@ -359,7 +359,11 @@ The active config lives at `~/.claude/model-router/config.json` and is never com
       "minKimiRequests": 4,
       "probeRequests": 2,
       "maxAttempts": 3,
-      "maxBackoffRequests": 32
+      "maxBackoffRequests": 16,
+      "windowToolCalls": 12,
+      "windowRequests": 6,
+      "windowMs": 300000,
+      "retryAfterExhaustedRequests": 16
     }
   },
   "telemetry": {
@@ -449,6 +453,8 @@ Useful endpoints:
 | `GET /metrics/json` | Authenticated JSON telemetry snapshot |
 | `GET /v1/models` | Claude Code model listing (`auto`, DeepSeek, Kimi) |
 | `POST /v1/router/preview` | Show routing decision without calling the selected upstream |
+| `GET /v1/router/state` | Authenticated in-memory Kimi residency and probe state |
+| `POST /v1/router/deescalate` | Authenticated manual recovery checkpoint (`conversationKey` or `all: true`) |
 | `POST /v1/messages` | Main proxied endpoint |
 | `POST /v1/messages/count_tokens` | Token counting through the selected provider |
 

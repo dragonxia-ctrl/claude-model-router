@@ -46,10 +46,10 @@ export function normalizeConfig(raw) {
       assert(routing.deescalation && typeof routing.deescalation === 'object' && !Array.isArray(routing.deescalation), 'routing.deescalation must be an object');
       const policy = routing.deescalation;
       if (policy.enabled !== undefined) assert(typeof policy.enabled === 'boolean', 'routing.deescalation.enabled must be a boolean');
-      for (const key of ['minKimiRequests', 'probeRequests', 'maxAttempts', 'maxBackoffRequests', 'windowToolCalls', 'minRecentToolCalls', 'maxMutationRepeats']) {
+      for (const key of ['minKimiRequests', 'probeRequests', 'maxAttempts', 'maxBackoffRequests', 'windowToolCalls', 'windowRequests', 'windowMs', 'retryAfterExhaustedRequests', 'minRecentToolCalls', 'maxMutationRepeats']) {
         if (policy[key] !== undefined) assert(Number.isInteger(policy[key]) && policy[key] >= 0, `routing.deescalation.${key} must be a non-negative integer`);
       }
-      for (const key of ['minKimiRequests', 'probeRequests', 'maxBackoffRequests', 'windowToolCalls', 'maxMutationRepeats']) {
+      for (const key of ['minKimiRequests', 'probeRequests', 'maxBackoffRequests', 'windowToolCalls', 'windowRequests', 'windowMs', 'maxMutationRepeats']) {
         if (policy[key] !== undefined) assert(policy[key] >= 1, `routing.deescalation.${key} must be at least 1`);
       }
       if (policy.maxFailureRate !== undefined) assert(typeof policy.maxFailureRate === 'number' && policy.maxFailureRate >= 0 && policy.maxFailureRate <= 1, 'routing.deescalation.maxFailureRate must be between 0 and 1');
