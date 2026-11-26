@@ -2,6 +2,8 @@
 
 **Version report · 2026-11-25.** This document records the defect that v2 fixes, the measurements that identified it, and how the fix was validated. All numbers come from one real session replayed through both engines; the raw data is in [`data/v1-v2.json`](data/v1-v2.json) and the figures are generated from it by [`render-figures.mjs`](render-figures.mjs).
 
+> Historical note: the capability rules described below ("video/visual capabilities never de-escalate") are the v1/v2 behaviour. v3 (1.3.0) replaced them with media-based detection — see [v2-to-v3.md](v2-to-v3.md).
+
 ---
 
 ## Abstract

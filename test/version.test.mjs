@@ -46,11 +46,12 @@ test('the checker serves a cached release without fetching', async t => {
   }));
   let fetches = 0;
   const checker = createUpdateChecker({
+    current: '1.2.0',
     cachePath,
     fetchImpl: async () => { fetches += 1; throw new Error('must not fetch'); },
   });
   const before = checker.info();
-  assert.equal(before.current, ROUTER_VERSION);
+  assert.equal(before.current, '1.2.0');
   assert.equal(before.latest, 'v1.3.0');
   assert.equal(before.status, 'available');
   assert.equal(before.updateAvailable, true);
@@ -64,6 +65,7 @@ test('the checker fetches the latest release and persists it', async t => {
   const cachePath = path.join(dir, 'version-cache.json');
   const urls = [];
   const checker = createUpdateChecker({
+    current: '1.2.0',
     cachePath,
     fetchImpl: async url => { urls.push(url); return response({ tag_name: 'v1.3.0' }); },
   });
@@ -81,6 +83,7 @@ test('the checker falls back to the package version on main when no release exis
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
   const urls = [];
   const checker = createUpdateChecker({
+    current: '1.2.0',
     cachePath: path.join(dir, 'version-cache.json'),
     fetchImpl: async url => {
       urls.push(url);
@@ -99,6 +102,7 @@ test('the checker falls back to tags when no release exists and picks the highes
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'router-version-'));
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
   const checker = createUpdateChecker({
+    current: '1.2.0',
     cachePath: path.join(dir, 'version-cache.json'),
     fetchImpl: async url => {
       if (url.endsWith('/releases/latest')) return response({ message: 'Not Found' }, false, 404);

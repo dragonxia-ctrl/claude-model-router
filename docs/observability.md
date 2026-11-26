@@ -54,6 +54,21 @@ Important metric families:
 
 In-memory counters reset on restart. The usage tap reads provider-reported usage from JSON or SSE while forwarding every response byte unchanged.
 
+### Route decision log fields
+
+Each routed request writes one `route_decision` JSON line to `router.log`:
+
+| Field | Meaning |
+| --- | --- |
+| `provider`, `model`, `source`, `reason` | Chosen upstream and why |
+| `stream` | Whether the client asked for a streaming response; only `stream: true` requests are treated as interactive for benchmark text heuristics |
+| `stats` | Tool-history counters behind progress escalation |
+| `conversationKey`, `taskKey` | Pseudonymous session/task identifiers for replay and correlation |
+| `capabilityKinds`, `hardCapability`, `media` | Which benchmark/capability rules fired, whether any of them blocks de-escalation, and which media block kinds were actually present (`video`, `image`) |
+| `deescalationOutcome` | Probe, relapse, blocked-window, or capability-block outcome |
+
+Prompts, file contents, and API keys are never logged. `media` is a boolean pair, not a media payload, so the log answers "did this request really contain video" without storing it.
+
 ### Optional JSONL persistence
 
 Manual Node deployments can set:

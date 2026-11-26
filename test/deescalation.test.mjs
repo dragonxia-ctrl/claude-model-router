@@ -4,7 +4,14 @@ import { createDecisionEngine } from '../src/decision-engine.mjs';
 import { evaluateRecovery, backoffRequests, DEESCALATION_DEFAULTS } from '../src/deescalation.mjs';
 
 const SOFT_TASK = '自主完成一个端到端完整项目';
-const HARD_TASK = '分析这个 mp4 视频';
+const HARD_TASK = '分析这个附件';
+
+function videoBody() {
+  return [{ role: 'user', content: [
+    { type: 'text', text: HARD_TASK },
+    { type: 'video', source: { type: 'base64', media_type: 'video/mp4', data: 'AAAA' } },
+  ] }];
+}
 
 function config(policy = {}) {
   return {
@@ -35,7 +42,7 @@ function followUp(messages, text = '继续') {
 }
 
 async function round(engine, messages, outcome = 'success', model = 'auto') {
-  const result = await engine.resolve({ model, messages }, { semantic: false });
+  const result = await engine.resolve({ model, stream: true, messages }, { semantic: false });
   engine.remember(result.decision, result.state);
   engine.observe(result.decision, { outcome });
   return result;
@@ -74,7 +81,7 @@ test('de-escalation starts only at a new human checkpoint', async () => {
 
 test('hard capabilities never automatically de-escalate', async () => {
   const engine = createDecisionEngine(() => config());
-  const messages = body(HARD_TASK);
+  const messages = videoBody();
   await round(engine, messages);
   const result = await round(engine, followUp(messages));
   assert.equal(result.decision.provider, 'kimi');

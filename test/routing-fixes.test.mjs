@@ -72,7 +72,7 @@ function driver() {
     for (let i = 0; i < n; i += 1) messages.push(...writePair(index++, options));
   };
   const run = async (outcome = 'success') => {
-    const r = await engine.resolve({ model: 'auto', messages });
+    const r = await engine.resolve({ model: 'auto', stream: true, messages });
     engine.remember(r.decision, r.state);
     engine.observe(r.decision, { outcome });
     return r;

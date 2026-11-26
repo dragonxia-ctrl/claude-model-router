@@ -4,6 +4,22 @@ All notable changes are documented here. The format follows Keep a Changelog and
 
 The version area with the problem analysis and measured evidence lives in [VERSIONS.md](VERSIONS.md).
 
+## [1.3.0] - 2026-11-26
+
+### Fixed
+
+- "Video input is Kimi-only" no longer comes from a text pattern. A video media block (`type: video` or `source.media_type: video/*`) is now the only hard Kimi-only capability, so a task that merely mentions video, `.mp4`, or "video understanding" no longer locks onto Kimi.
+- Complex visual reasoning text is ordinary evidence instead of a hard lock, so a clean recovery window can probe back to DeepSeek. An image block on its own never hard-locks.
+- Non-streaming auxiliary calls (requests that omit `stream` or set it to `false`) keep the default provider: benchmark text heuristics and semantic triage now apply only to interactive streaming requests. Two measured auxiliary channels had run 100% on Kimi (18.7M tokens) because their text matched those heuristics and the hard lock blocked every recovery probe. Explicit model selection and real video media still win.
+
+### Added
+
+- `route_decision` logs now carry `capabilityKinds`, `hardCapability`, and `media: {video, image}`.
+- `docs/versions/v2-to-v3.md`, `docs/versions/data/v2-v3.json`, and `docs/versions/replay-v3.mjs`: the v2→v3 report, its measurements, and the script that regenerates them from `router.log`. Two new figures cover Kimi share and per-channel token totals.
+- Four regression tests for media-based capability detection and the interactive scope of text heuristics (80 tests total).
+
+On the measured 2026-11-25 session window (772 requests, 69.5M tokens), Kimi's share moves from 61.3% to 21.2% of requests (52.4% → 25.5% of tokens); interactive channels are unchanged. See [docs/versions/v2-to-v3.md](docs/versions/v2-to-v3.md).
+
 ## [1.2.0] - 2026-11-25
 
 ### Fixed

@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="440" viewBox="0 0 880 440" role="img" aria-labelledby="t d">
+<title id="t">Kimi tokens by conversation channel</title><desc id="d">Paired horizontal bars: Kimi-served tokens per conversation channel under v2 and v3, same session window.</desc>
+<rect x="0.5" y="0.5" width="879" height="439" rx="8" fill="#fcfcfb" stroke="#e6e5e0"/>
+<style>
+text { font-family: 'Inter','ui-sans-serif','-apple-system','Segoe UI',Roboto,Helvetica,Arial,sans-serif; }
+.t { font-size: 15px; font-weight: 600; fill: #0b0b0b; }
+.s { font-size: 12px; fill: #52514e; }
+.a { font-size: 11px; fill: #52514e; font-variant-numeric: tabular-nums; }
+.v { font-size: 11px; font-weight: 600; fill: #0b0b0b; font-variant-numeric: tabular-nums; }
+.l { font-size: 12px; fill: #52514e; }
+</style>
+<text class="t" x="32" y="32">Where the Kimi tokens actually went</text>
+<text class="s" x="32" y="52">Kimi-served tokens per channel · same window · v2 above, v3 below each pair</text>
+<rect x="32" y="70" width="10" height="10" rx="2" fill="#eb6834"/>
+<text class="l" x="48" y="79">v2</text>
+<rect x="83.2" y="70" width="10" height="10" rx="2" fill="#2a78d6"/>
+<text class="l" x="99.2" y="79">v3</text>
+<text class="a" x="156" y="115" text-anchor="end">ea4ff0cb70</text>
+<path d="M168,104 L763.3397952288395,104 Q767.3397952288395,104 767.3397952288395,108 L767.3397952288395,113 Q767.3397952288395,117 763.3397952288395,117 L168,117 Z" fill="#eb6834"/>
+<text class="v" x="174" y="114">13.7M</text>
+<path d="M168,120 L763.3397952288395,120 Q767.3397952288395,120 767.3397952288395,124 L767.3397952288395,129 Q767.3397952288395,133 763.3397952288395,133 L168,133 Z" fill="#2a78d6"/>
+<text class="v" x="174" y="130">13.7M</text>
+<text class="a" x="156" y="155" text-anchor="end">9e6f5dfdda · non-stream</text>
+<path d="M168,144 L808,144 Q812,144 812,148 L812,153 Q812,157 808,157 L168,157 Z" fill="#eb6834"/>
+<text class="v" x="174" y="154">14.8M</text>
+<text class="v" x="174" y="170">0.0M</text>
+<text class="a" x="156" y="195" text-anchor="end">c8344dfc66</text>
+<path d="M168,184 L273.42510895313876,184 Q277.42510895313876,184 277.42510895313876,188 L277.42510895313876,193 Q277.42510895313876,197 273.42510895313876,197 L168,197 Z" fill="#eb6834"/>
+<text class="v" x="174" y="194">2.5M</text>
+<path d="M168,200 L273.42510895313876,200 Q277.42510895313876,200 277.42510895313876,204 L277.42510895313876,209 Q277.42510895313876,213 273.42510895313876,213 L168,213 Z" fill="#2a78d6"/>
+<text class="v" x="174" y="210">2.5M</text>
+<text class="a" x="156" y="235" text-anchor="end">31eaea2910 · non-stream</text>
+<path d="M168,224 L335.2546352537431,224 Q339.2546352537431,224 339.2546352537431,228 L339.2546352537431,233 Q339.2546352537431,237 335.2546352537431,237 L168,237 Z" fill="#eb6834"/>
+<text class="v" x="174" y="234">3.9M</text>
+<text class="v" x="174" y="250">0.0M</text>
+<text class="a" x="156" y="275" text-anchor="end">08e92d4698</text>
+<path d="M168,264 L198.08573700914144,264 Q202.08573700914144,264 202.08573700914144,268 L202.08573700914144,273 Q202.08573700914144,277 198.08573700914144,277 L168,277 Z" fill="#eb6834"/>
+<text class="v" x="208.08573700914144" y="274">0.8M</text>
+<path d="M168,280 L198.08573700914144,280 Q202.08573700914144,280 202.08573700914144,284 L202.08573700914144,289 Q202.08573700914144,293 198.08573700914144,293 L168,293 Z" fill="#2a78d6"/>
+<text class="v" x="208.08573700914144" y="290">0.8M</text>
+<text class="a" x="156" y="315" text-anchor="end">24d24cf369 · non-stream</text>
+<text class="v" x="174" y="314">0.0M</text>
+<text class="v" x="174" y="330">0.0M</text>
+<text class="a" x="156" y="355" text-anchor="end">d82bf89caa</text>
+<text class="v" x="174" y="354">0.0M</text>
+<text class="v" x="174" y="370">0.0M</text>
+<text class="a" x="32" y="422">“non-stream” channels are auxiliary model calls; v3 keeps them on DeepSeek.</text>
+</svg>

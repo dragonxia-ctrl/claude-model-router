@@ -35,11 +35,12 @@ This project puts a small HTTP proxy on `127.0.0.1` between Claude Code and the 
 - Routes Claude Code's Anthropic-compatible Messages API traffic to DeepSeek or Kimi.
 - Defaults to **DeepSeek** for ordinary coding, architecture, refactoring, bug fixing, Kaggle, data science, finance, legal work, and general questions—even when the task is large or difficult.
 - Escalates to **Kimi** for:
-  - video input,
+  - actual video media blocks,
   - genuine long-horizon autonomous project delivery,
   - difficult multi-step tool-assisted research that verifies sources,
   - research-level mathematics and proofs,
   - complex visual reasoning.
+  Text heuristics and semantic triage apply only to interactive streaming requests; non-streaming auxiliary calls keep the default provider.
 - Escalates based on **progress signals**, not raw tool-call counts:
   - repeated failed verification cycles after edits,
   - repeated error signatures,
@@ -107,7 +108,7 @@ flowchart LR
 6. Incompatible thinking blocks are removed if providers switch.
 7. The request is forwarded upstream with the provider's key.
 8. Response status, content type, SSE chunks, and retry headers are passed back unchanged.
-9. A structured log line records provider, reason, source, stream flag, progress stats, conversation/task keys, and the de-escalation outcome. Prompts and API keys are not logged.
+9. A structured log line records provider, reason, source, stream flag, progress stats, conversation/task keys, capability/media kinds, and the de-escalation outcome. Prompts and API keys are not logged.
 
 ### Routing policy
 
@@ -119,9 +120,10 @@ The default policy is intentionally conservative. It is based on public comparis
 | Kaggle, data science, finance, legal | DeepSeek comparable or better in the consulted comparisons | DeepSeek |
 | Terminal-heavy long-horizon agent work | Kimi clearly ahead on Terminal-Bench-style comparisons | Kimi when the task is genuinely long-horizon or progress degrades |
 | Difficult tool-assisted research | Kimi ahead on HLE-style tasks | Kimi for source-oriented multi-step research |
-| Frontier math, complex visual, video | Kimi advantage | Kimi |
+| Frontier math, complex visual reasoning | Kimi advantage | Kimi |
+| Video media blocks | Only Kimi can consume video | Kimi (hard, never de-escalates) |
 
-Kimi residency is bounded rather than permanent. After four Kimi requests by default, a clean recent execution window at a recovery checkpoint permits two DeepSeek probe requests. A checkpoint is a new human message or — inside a long tool-use turn — every 24 new tool calls, so a single long turn no longer pins Kimi indefinitely. New failures return to Kimi with capped exponential backoff; video and complex visual requirements never automatically de-escalate. Explicit model selection still wins.
+Kimi residency is bounded rather than permanent. After four Kimi requests by default, a clean recent execution window at a recovery checkpoint permits two DeepSeek probe requests. A checkpoint is a new human message or — inside a long tool-use turn — every 24 new tool calls, so a single long turn no longer pins Kimi indefinitely. New failures return to Kimi with capped exponential backoff; only actual video media never automatically de-escalates. A text mention of video is not a capability requirement, and non-streaming auxiliary calls stay on the default provider. Explicit model selection still wins.
 
 The exact rules, tuning knobs, and open-source design references are documented in [docs/routing-policy.md](docs/routing-policy.md).
 

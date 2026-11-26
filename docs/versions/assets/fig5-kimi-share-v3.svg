@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="360" viewBox="0 0 880 360" role="img" aria-labelledby="t d">
+<title id="t">Kimi share of the session window, v2 vs v3</title><desc id="d">Grouped columns: share of all requests and of all tokens served by Kimi in the same 2026-11-25 session window.</desc>
+<rect x="0.5" y="0.5" width="879" height="359" rx="8" fill="#fcfcfb" stroke="#e6e5e0"/>
+<style>
+text { font-family: 'Inter','ui-sans-serif','-apple-system','Segoe UI',Roboto,Helvetica,Arial,sans-serif; }
+.t { font-size: 15px; font-weight: 600; fill: #0b0b0b; }
+.s { font-size: 12px; fill: #52514e; }
+.a { font-size: 11px; fill: #52514e; font-variant-numeric: tabular-nums; }
+.v { font-size: 11px; font-weight: 600; fill: #0b0b0b; font-variant-numeric: tabular-nums; }
+.l { font-size: 12px; fill: #52514e; }
+</style>
+<text class="t" x="32" y="32">Kimi share of the whole session window</text>
+<text class="s" x="32" y="52">772 logged requests · 69.5M tokens · replayed through v2 and v3</text>
+<rect x="32" y="68" width="10" height="10" rx="2" fill="#eb6834"/>
+<text class="l" x="48" y="77">v2 (1.2.0)</text>
+<rect x="136" y="68" width="10" height="10" rx="2" fill="#2a78d6"/>
+<text class="l" x="152" y="77">v3 (1.3.0)</text>
+<line x1="76" y1="272" x2="828" y2="272" stroke="#e9e8e3" stroke-width="1"/>
+<text class="a" x="66" y="276" text-anchor="end">0%</text>
+<line x1="76" y1="231.5" x2="828" y2="231.5" stroke="#e9e8e3" stroke-width="1"/>
+<text class="a" x="66" y="235.5" text-anchor="end">25%</text>
+<line x1="76" y1="191" x2="828" y2="191" stroke="#e9e8e3" stroke-width="1"/>
+<text class="a" x="66" y="195" text-anchor="end">50%</text>
+<line x1="76" y1="150.5" x2="828" y2="150.5" stroke="#e9e8e3" stroke-width="1"/>
+<text class="a" x="66" y="154.5" text-anchor="end">75%</text>
+<line x1="76" y1="110" x2="828" y2="110" stroke="#e9e8e3" stroke-width="1"/>
+<text class="a" x="66" y="114" text-anchor="end">100%</text>
+<path d="M281,272 L281,176.69400000000002 Q281,172.69400000000002 285,172.69400000000002 L329,172.69400000000002 Q333,172.69400000000002 333,176.69400000000002 L333,272 Z" fill="#eb6834"/>
+<text class="v" x="307" y="164.69400000000002" text-anchor="middle">61.3%</text>
+<path d="M335,272 L335,241.656 Q335,237.656 339,237.656 L383,237.656 Q387,237.656 387,241.656 L387,272 Z" fill="#2a78d6"/>
+<text class="v" x="361" y="229.656" text-anchor="middle">21.2%</text>
+<text class="a" x="334" y="294" text-anchor="middle">Share of requests</text>
+<path d="M517,272 L517,191.112 Q517,187.112 521,187.112 L565,187.112 Q569,187.112 569,191.112 L569,272 Z" fill="#eb6834"/>
+<text class="v" x="543" y="179.112" text-anchor="middle">52.4%</text>
+<path d="M571,272 L571,234.69 Q571,230.69 575,230.69 L619,230.69 Q623,230.69 623,234.69 L623,272 Z" fill="#2a78d6"/>
+<text class="v" x="597" y="222.69" text-anchor="middle">25.5%</text>
+<text class="a" x="570" y="294" text-anchor="middle">Share of tokens</text>
+<text class="a" x="32" y="322">Only non-streaming auxiliary calls and text-only “video” mentions change provider.</text>
+</svg>
