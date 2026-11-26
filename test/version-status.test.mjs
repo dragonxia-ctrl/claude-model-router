@@ -20,6 +20,9 @@ function run(cache, { installed = cache?.current, config = null, state = null } 
       env: {
         ...process.env,
         CLAUDE_ROUTER_VERSION_CACHE: cachePath,
+        // Keep the render hermetic: the container image and the developer
+        // shell may both export a config path.
+        CLAUDE_ROUTER_CONFIG: path.join(dir, 'config.json'),
         // Never spawn the background GitHub check from the test suite.
         CLAUDE_ROUTER_STATUS_NO_REFRESH: '1',
         ...(installed ? { CLAUDE_ROUTER_INSTALLED_VERSION: installed } : {}),
