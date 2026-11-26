@@ -382,6 +382,7 @@ node bin/claude-router.mjs verify
 | `routing.triageTimeoutMs` | 分类器超时 |
 | `routing.triageMaxInputChars` | 发送给分类器的最大任务字符数 |
 | `routing.deescalation` | 有界 Kimi 驻留、恢复探针与退避；详见[路由策略](docs/routing-policy.md) |
+| `updates` | 可选：自动安装已发布版本（`auto`）、源码 checkout（`source`）与 launchd 标签（`launchdLabel`）；见[从 GitHub 更新](#从-github-更新) |
 | `telemetry` | 可选私有 JSONL 持久化、保留与轮转；详见[可观测性](docs/observability.md) |
 
 语义分类器只接收截断后的当前任务文本，不接收工具结果、文件内容或完整对话。
@@ -416,6 +417,26 @@ claude-router update --dry-run   # 只显示将要部署的内容
 
 如果 checkout 不在 `main` 上有未提交改动，它会拒绝执行；已是最新时直接提示且不改动任何文件；重启或验证失败会恢复之前的文件。Docker 安装则使用 `git pull` 后执行 `npm run compose:up`。
 
+#### 自动更新
+
+服务式安装可以让 router 自己安装新版本。开关默认关闭：
+
+```bash
+claude-router update --auto on     # 开启自动安装
+claude-router update --auto off    # 关闭
+claude-router update --auto        # 查看开关、最近一次尝试及其错误
+```
+
+开启后，运行中的 router 会自动安装更新的已发布版本。它把同一个更新器作为独立进程启动，避免 launchd 重启把校验进程一并杀掉：拉取并校验干净的 `main`、运行离线测试、带备份部署、重启服务，并验证健康状态、`/version` 和一次路由预览。输出写入 `router.log` 旁边的 `auto-update.log`。失败后一小时内部重试，状态栏显示 `auto-update failed`；`claude-router update --auto` 会打印记录的错误。
+
+要求与限制：
+
+- 源码 checkout（`updates.source`，默认 `~/claude-model-router`）必须位于 `main` 且没有未提交改动，与手动更新相同。
+- 服务必须能由 launchd 重启；Docker 安装不使用自动安装，仍用 `git pull` 后执行 `npm run compose:up`。
+- 已发布版本取 `main` 上的 `package.json` 版本（或在有 GitHub release/tag 时取最新版本）。没有提升版本号的普通提交不会被自动安装。
+- 如果文件已部署但服务尚未重启（例如 `--restart none`），状态栏显示 `update installed, restart to update`。
+- 打开或关闭开关只会改写 `config.json` 中的 `updates.auto`，并向运行中的 router 发送 SIGHUP，立即生效。
+
 可用端点：
 
 | 端点 | 用途 |
@@ -447,7 +468,7 @@ claude-router update --dry-run   # 只显示将要部署的内容
 
 ### 在 Claude Code 中显示版本
 
-`GET /version` 返回当前运行的版本与最新发布版本；router 会在启动时（之后至多每 6 小时一次）把同样的状态写入 `~/.claude/model-router/version-cache.json`，离线时静默跳过。
+`GET /version` 返回当前运行版本、最新发布版本与更新可用状态；运行中的 router 会把同样的状态写入 `~/.claude/model-router/version-cache.json`，在启动时检查一次，之后至多每 30 分钟一次（离线时静默跳过，并保留上次已知版本）。
 
 要在 Claude Code 里看到它，使用原生状态栏（也就是 Claude Code 自己显示版本和升级提示的位置）。在 `~/.claude/settings.json` 中加入以下配置并重启 Claude Code：
 
@@ -460,7 +481,13 @@ claude-router update --dry-run   # 只显示将要部署的内容
 
 （`version-status.mjs` 对应仓库中的 `scripts/version-status.mjs`；手动部署时把它复制到数据目录。）
 
-状态栏会以暗色显示 `router v1.2.0 · latest v1.2.0`；一旦有新版本，就以琥珀色显示 `router v1.2.0 · v1.3.0 available`。该脚本只读取本地缓存文件：不访问网络、不消耗供应商 token；router 从未上报版本时不输出任何内容。
+状态栏的渲染路径只读本地文件，显示规则：
+
+- 运行版本已是最新时，暗色显示 `router v1.4.0 · latest v1.4.0`。
+- 有新版本时，琥珀色显示 `router v1.4.0 · v1.5.0 available`；开启自动更新后追加 `· auto-update on`、`· auto-update running` 或 `· auto-update failed`。
+- 部署的 `version.mjs` 比运行进程更新时，琥珀色显示 `router v1.3.0 · update installed, restart to update`。
+
+当缓存的检查结果超过十分钟时，脚本会启动一个带节流的独立 `--refresh` 子进程向 GitHub 查询一次并更新缓存；因此即使 router 从未重启，新版本也会及时显示。失败时静默，多个 Claude Code 窗口共用一个刷新名额。不使用供应商 token；router 从未上报版本时不输出任何内容。在 Claude Code 之外，`claude-router version` 会打印相同的版本信息和自动更新开关。
 
 ---
 

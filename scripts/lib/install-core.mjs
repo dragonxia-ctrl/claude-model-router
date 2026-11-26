@@ -58,6 +58,7 @@ export function buildConfig({ existing = null, providerKeys = {}, port, host, to
     },
     providers: {},
     routing: { ...ROUTING_DEFAULTS, ...(base.routing || {}) },
+    updates: { auto: false, ...(base.updates || {}) },
   };
   for (const name of ['kimi', 'deepseek']) {
     const prior = baseProviders[name] || {};

@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { deployPlan, expectedVersion, parseArgs } from '../scripts/router-update.mjs';
+import { deployPlan, expectedVersion, parseArgs, setAutoUpdate, installedVersion } from '../scripts/router-update.mjs';
 
 const script = fileURLToPath(new URL('../scripts/router-update.mjs', import.meta.url));
 
@@ -107,9 +107,65 @@ test('argument parsing defaults and validation', () => {
   assert.equal(options.source, '/tmp/src');
   assert.equal(options.port, 19999);
   assert.equal(options.restart, 'launchd');
+  assert.equal(options.auto, null);
+  assert.equal(options.autoInstall, false);
   assert.throws(() => parseArgs(['--restart', 'nope']), /launchd or none/);
   assert.throws(() => parseArgs(['--source']), /Missing value/);
   assert.throws(() => parseArgs(['--bogus']), /Unknown option/);
+});
+
+test('the auto-update switch parses on, off, status, and the internal install mode', () => {
+  assert.equal(parseArgs(['--auto'], 'darwin').auto, 'status');
+  assert.equal(parseArgs(['--auto', 'on'], 'darwin').auto, 'on');
+  assert.equal(parseArgs(['--auto', 'off'], 'darwin').auto, 'off');
+  assert.equal(parseArgs(['--auto=on'], 'darwin').auto, 'on');
+  assert.equal(parseArgs(['--auto-install'], 'darwin').autoInstall, true);
+  assert.throws(() => parseArgs(['--auto=maybe']), /on or off/);
+});
+
+test('setAutoUpdate changes only the switch and preserves the rest of the config', t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'router-auto-toggle-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const configPath = path.join(dir, 'config.json');
+  const config = {
+    router: { host: '127.0.0.1', port: 17861, token: 'a'.repeat(64) },
+    providers: { deepseek: { apiKey: 'keep-me' } },
+    updates: { auto: false, source: '/srv/router' },
+  };
+  fs.writeFileSync(configPath, JSON.stringify(config));
+  assert.equal(setAutoUpdate(configPath, true), true);
+  const written = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  assert.equal(written.updates.auto, true);
+  assert.equal(written.updates.source, '/srv/router');
+  assert.equal(written.providers.deepseek.apiKey, 'keep-me');
+  assert.equal(written.router.port, 17861);
+});
+
+test('the --auto toggle is applied through the CLI with restart disabled', t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'router-auto-cli-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const configPath = path.join(dir, 'config.json');
+  fs.writeFileSync(configPath, JSON.stringify({
+    router: { host: '127.0.0.1', port: 17861, token: 'a'.repeat(64) },
+    providers: { deepseek: { apiKey: 'keep-me' }, kimi: { apiKey: 'keep-me-too' } },
+  }));
+  const on = execFileSync(process.execPath, [
+    script, '--auto', 'on', '--data-dir', dir, '--restart', 'none',
+  ], { encoding: 'utf8' });
+  assert.match(on, /Auto-update: on/);
+  assert.equal(JSON.parse(fs.readFileSync(configPath, 'utf8')).updates.auto, true);
+  const status = execFileSync(process.execPath, [
+    script, '--auto', '--data-dir', dir, '--restart', 'none',
+  ], { encoding: 'utf8' });
+  assert.match(status, /Auto-update: on/);
+});
+
+test('installedVersion reads the deployed release', t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'router-installed-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  assert.equal(installedVersion(dir), null);
+  fs.writeFileSync(path.join(dir, 'version.mjs'), "export const ROUTER_VERSION = '1.4.0';\n");
+  assert.equal(installedVersion(dir), '1.4.0');
 });
 
 test('expectedVersion requires package.json and src/version.mjs to agree', t => {
@@ -176,12 +232,45 @@ test('update pulls main, deploys with a backup, and verifies the live router', {
   assert.equal(JSON.parse(fs.readFileSync(path.join(data, 'config.json'), 'utf8')).router.token, 'test-token');
 });
 
+test('auto-install records a successful detached run and releases its lock', { skip: NO_GIT }, async t => {
+  const { root, seed, clone } = setupRemote(t);
+  const data = dataDir(t, root);
+  publish(seed, '1.3.0');
+  const port = await fakeRouter(t, '1.3.0');
+
+  const result = await runUpdate([
+    '--auto-install', '--source', clone, '--data-dir', data, '--restart', 'none', '--skip-tests',
+    '--port', String(port),
+  ]);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Auto-update finished/);
+  const state = JSON.parse(fs.readFileSync(path.join(data, 'auto-update-state.json'), 'utf8'));
+  assert.equal(state.status, 'ok');
+  assert.equal(state.version, '1.3.0');
+  assert.equal(fs.existsSync(path.join(data, 'auto-update.lock')), false);
+  assert.match(fs.readFileSync(path.join(data, 'version.mjs'), 'utf8'), /1\.3\.0/);
+});
+
+test('auto-install records a refused run as failed', { skip: NO_GIT }, async t => {
+  const { root, clone } = setupRemote(t);
+  const data = dataDir(t, root);
+  write(path.join(clone, 'src', 'router.mjs'), '// local edit\n');
+
+  const result = await runUpdate([
+    '--auto-install', '--source', clone, '--data-dir', data, '--restart', 'none', '--skip-tests',
+  ]);
+  assert.notEqual(result.status, 0);
+  const state = JSON.parse(fs.readFileSync(path.join(data, 'auto-update-state.json'), 'utf8'));
+  assert.equal(state.status, 'failed');
+  assert.match(state.message, /uncommitted changes/);
+  assert.equal(fs.existsSync(path.join(data, 'auto-update.lock')), false);
+});
+
 test('a failed verification restores the previous files', { skip: NO_GIT }, async t => {
   const { root, seed, clone } = setupRemote(t);
   const data = dataDir(t, root);
   write(path.join(data, 'version.mjs'), "export const ROUTER_VERSION = '0.0.1';\n");
-  publish(seed, '1.3.0');
-  const port = await fakeRouter(t, '9.9.9');
+  publish(seed, '1.3.0');  const port = await fakeRouter(t, '9.9.9');
 
   const result = await runUpdate([
     '--source', clone, '--data-dir', data, '--restart', 'none', '--skip-tests', '--port', String(port),

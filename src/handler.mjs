@@ -42,9 +42,10 @@ export function createHandler(configSource, options = {}) {
       if (req.method === 'GET' && pathname === '/health') { json(res, 200, health(getConfig())); return; }
       if (req.method === 'GET' && pathname === '/health/live') { json(res, 200, liveHealth()); return; }
       if (req.method === 'GET' && pathname === '/version') {
+        const autoUpdate = getConfig().updates?.auto === true;
         if (updateChecker) {
           void updateChecker.refresh().catch(() => {});
-          json(res, 200, updateChecker.info());
+          json(res, 200, { ...updateChecker.info(), autoUpdate });
         } else {
           json(res, 200, {
             current: ROUTER_VERSION,
@@ -53,6 +54,7 @@ export function createHandler(configSource, options = {}) {
             updateAvailable: false,
             checkedAt: null,
             repository: 'dragonxia-ctrl/claude-model-router',
+            autoUpdate,
           });
         }
         return;

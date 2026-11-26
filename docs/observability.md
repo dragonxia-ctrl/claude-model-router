@@ -94,18 +94,23 @@ Files are named `requests-YYYY-MM-DD[-n].jsonl`, created with owner-only permiss
 
 ```json
 {
-  "current": "1.2.0",
-  "latest": "v1.2.0",
+  "current": "1.4.0",
+  "latest": "v1.4.0",
   "status": "current",
   "updateAvailable": false,
-  "checkedAt": "2026-11-25T13:50:00.000Z",
-  "repository": "dragonxia-ctrl/claude-model-router"
+  "checkedAt": "2026-11-26T13:50:00.000Z",
+  "repository": "dragonxia-ctrl/claude-model-router",
+  "autoUpdate": false
 }
 ```
 
 `status` is `current` when the running release matches the latest release, `available` when a newer release exists, `ahead` when the running build is newer than anything published, and `unknown` when no release information has been fetched yet. `GET /health` also carries the running release as `release`.
 
-The router checks the public GitHub `releases/latest` endpoint of its own repository (falling back to the `package.json` version on `main` through the GitHub contents API, then its tag list) at startup and at most once every six hours, caches the result in `version-cache.json` next to `config.json` (override with `CLAUDE_ROUTER_VERSION_CACHE`), and serves the cached answer to `/version`. A failed or unreachable lookup is silent: the endpoint still reports the running release with `status: "unknown"`. No prompts, tool history, keys, or local identifiers are sent — the update check is a single unauthenticated GitHub read, exactly like an application checking its own release feed. `claude-router version` prints the same state outside Claude Code.
+The router checks the public GitHub `releases/latest` endpoint of its own repository (falling back to the `package.json` version on `main` through the GitHub contents API, then its tag list) at startup and at most once every 30 minutes, caches the result in `version-cache.json` next to `config.json` (override with `CLAUDE_ROUTER_VERSION_CACHE`), and serves the cached answer to `/version`. A failed or unreachable lookup is silent and keeps the last known release: the endpoint still reports `status: "unknown"` only when nothing has ever been fetched, and a failed attempt is recorded so an offline machine does not retry in a loop. The cache is written atomically by three writers (the router, the status line refresher, and the updater), and each write merges rather than replacing the fields it does not own. No prompts, tool history, keys, or local identifiers are sent — the update check is a single unauthenticated GitHub read, exactly like an application checking its own release feed. `claude-router version` prints the same state outside Claude Code.
+
+### Automatic updates
+
+`updates.auto` (default `false`) lets the running router install a newer published release by itself. `claude-router update --auto on|off` changes the switch; the bare command prints the switch and the last attempt. When it is on, a periodic tick reuses the cached release check and starts `router-update.mjs --auto-install` as a detached process, so the launchd restart cannot kill the verifier. It records state in `auto-update-state.json` (`running`, `ok`, or `failed`), appends the updater's output to `auto-update.log`, and backs off for an hour after a failure. A live run is not started twice, and a release that is already deployed but awaits a restart is not deployed again. The update itself is the same verified path as a manual `claude-router update`: clean `main` checkout, matching `package.json` and `src/version.mjs`, offline tests, backup, restart, health/`/version`/preview verification, and rollback on failure. The source can be set with `updates.source`; Docker installs are not updated automatically.
 
 ### Status line inside Claude Code
 
@@ -118,7 +123,9 @@ The router checks the public GitHub `releases/latest` endpoint of its own reposi
 }
 ```
 
-It prints `router v1.2.0 · latest v1.2.0` dimmed, or `router v1.2.0 · v1.3.0 available` in amber when an upgrade exists, and nothing at all when the router has never written a version cache. The helper performs no I/O beyond reading that one file, so it is safe on every status line refresh. Mods such as the usage probe run in a sandbox without `fetch`, `process`, or filesystem access, which is why version visibility uses the status line rather than the turn footer.
+It prints `router v1.4.0 · latest v1.4.0` dimmed, `router v1.4.0 · v1.5.0 available` in amber when an upgrade exists, and `router v1.3.0 · update installed, restart to update` in amber when the deployed `version.mjs` is newer than the running process. With automatic updates on, an upgrade notice ends with `· auto-update on`, `· auto-update running`, or `· auto-update failed`. It prints nothing when the router has never written a version cache.
+
+The render reads only local files, so it is safe on every status line refresh. When the cached check is older than ten minutes, it starts a detached `--refresh` child that performs one GitHub lookup and updates the cache; a stamp file limits the whole machine to one attempt every two minutes, so several Claude Code windows share a single refresh. The child is silent on failure. Mods such as the usage probe run in a sandbox without `fetch`, `process`, or filesystem access, which is why version visibility uses the status line rather than the turn footer.
 
 ## Terminal usage probe
 

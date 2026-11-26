@@ -1,10 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-export const ROUTER_VERSION = '1.3.0';
+export const ROUTER_VERSION = '1.4.0';
 export const REPOSITORY = 'dragonxia-ctrl/claude-model-router';
 
-const DEFAULT_INTERVAL_MS = 6 * 60 * 60 * 1000;
+const DEFAULT_INTERVAL_MS = 30 * 60 * 1000;
 const DEFAULT_TIMEOUT_MS = 5000;
 
 export function parseVersion(value) {
@@ -49,66 +49,44 @@ function localVersionInfo(current = ROUTER_VERSION) {
   };
 }
 
+/** Read the shared version cache; missing or corrupt files mean "not checked". */
+export function readVersionCache(cachePath) {
+  try {
+    const cached = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
+    return cached && typeof cached === 'object' && !Array.isArray(cached) ? cached : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
- * Tracks the newest published release without ever blocking a request.
- * The first call returns whatever the on-disk cache holds; refresh() updates it
- * in the background and is retried at most once per interval.
+ * Merge a patch into the version cache atomically. The running router, the
+ * status line refresher, and the updater all write this file, so a writer must
+ * never drop fields it does not own (for example the router's `current` or any
+ * field another process added).
  */
-export function createUpdateChecker({
-  current = ROUTER_VERSION,
-  cachePath = null,
+export function writeVersionCache(cachePath, patch) {
+  const next = { ...(readVersionCache(cachePath) || {}), ...patch };
+  fs.mkdirSync(path.dirname(cachePath), { recursive: true });
+  const temporary = `${cachePath}.${process.pid}.tmp`;
+  fs.writeFileSync(temporary, JSON.stringify(next), { mode: 0o600 });
+  fs.renameSync(temporary, cachePath);
+  return next;
+}
+
+/**
+ * The GitHub lookup order: newest release, then the version on main, then the
+ * highest tag. Kept separate from the checker so the status line's background
+ * refresher can look up only the published release.
+ */
+export function createLatestLookup({
   fetchImpl = globalThis.fetch,
   endpoint = `https://api.github.com/repos/${REPOSITORY}/releases/latest`,
   packageEndpoint = `https://api.github.com/repos/${REPOSITORY}/contents/package.json?ref=main`,
   tagsEndpoint = `https://api.github.com/repos/${REPOSITORY}/tags`,
-  intervalMs = DEFAULT_INTERVAL_MS,
   timeoutMs = DEFAULT_TIMEOUT_MS,
-  now = Date.now,
   logger = () => {},
 } = {}) {
-  let state = { latest: null, checkedAt: null };
-  let inflight = null;
-
-  if (cachePath) {
-    try {
-      const cached = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
-      const checkedAt = Date.parse(cached.checkedAt);
-      if (parseVersion(cached.latest) && Number.isFinite(checkedAt)) {
-        state = { latest: String(cached.latest), checkedAt: new Date(checkedAt).toISOString() };
-      }
-    } catch {
-      // A missing or corrupt cache just means "not checked yet".
-    }
-  }
-
-  function info() {
-    const status = updateStatus(current, state.latest);
-    return {
-      ...localVersionInfo(current),
-      latest: state.latest,
-      status,
-      updateAvailable: status === 'available',
-      checkedAt: state.checkedAt,
-    };
-  }
-
-  function isStale() {
-    if (!state.checkedAt) return true;
-    return now() - Date.parse(state.checkedAt) >= intervalMs;
-  }
-
-  function persist() {
-    if (!cachePath) return;
-    try {
-      fs.mkdirSync(path.dirname(cachePath), { recursive: true });
-      // The cache is also the status line's data source, so it stores the whole
-      // info object: current release, latest release, and update state.
-      fs.writeFileSync(cachePath, JSON.stringify(info()));
-    } catch (error) {
-      logger('version_cache_write_failed', error);
-    }
-  }
-
   async function fetchJson(url) {
     const response = await fetchImpl(url, {
       headers: {
@@ -155,17 +133,115 @@ export function createUpdateChecker({
     return null;
   }
 
-  async function refresh({ force = false } = {}) {
-    if (!force && !isStale()) {
-      persist();
-      return info();
+  return { lookupLatest };
+}
+
+/**
+ * Tracks the newest published release without ever blocking a request.
+ * The first call returns whatever the on-disk cache holds; refresh() updates it
+ * in the background and is retried at most once per interval. The constructor
+ * seeds the cache with the running release so the status line knows which
+ * process is live even when another writer refreshed the cache in between.
+ */
+export function createUpdateChecker({
+  current = ROUTER_VERSION,
+  cachePath = null,
+  fetchImpl = globalThis.fetch,
+  endpoint = `https://api.github.com/repos/${REPOSITORY}/releases/latest`,
+  packageEndpoint = `https://api.github.com/repos/${REPOSITORY}/contents/package.json?ref=main`,
+  tagsEndpoint = `https://api.github.com/repos/${REPOSITORY}/tags`,
+  intervalMs = DEFAULT_INTERVAL_MS,
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+  now = Date.now,
+  logger = () => {},
+  // The status line's refresher only owns the release fields. It must not
+  // write `current` (owned by the running router) or the derived status, or a
+  // check that raced a restart could advertise the previous process.
+  writeStatus = true,
+} = {}) {
+  const cached = cachePath ? readVersionCache(cachePath) : null;
+  let state = { latest: null, checkedAt: null };
+  let inflight = null;
+
+  if (cached) {
+    const checkedAt = Date.parse(cached.checkedAt);
+    if (parseVersion(cached.latest) && Number.isFinite(checkedAt)) {
+      state = { latest: String(cached.latest), checkedAt: new Date(checkedAt).toISOString() };
     }
+    // A restarted router must immediately be visible as `current`, even when
+    // the cached release check is still fresh and no network call happens.
+    if (writeStatus && current && cached.current !== current) {
+      try {
+        writeVersionCache(cachePath, { current });
+      } catch (error) {
+        logger('version_cache_write_failed', error);
+      }
+    }
+  }
+
+  const { lookupLatest } = createLatestLookup({
+    fetchImpl, endpoint, packageEndpoint, tagsEndpoint, timeoutMs, logger,
+  });
+
+  // The status line and this process share the cache. If another writer has a
+  // fresher check, take it instead of reporting an older in-memory answer.
+  function syncFromCache() {
+    if (!cachePath) return;
+    const fresh = readVersionCache(cachePath);
+    const freshAt = Date.parse(fresh?.checkedAt);
+    const ownAt = Date.parse(state.checkedAt);
+    if (!parseVersion(fresh?.latest) || !Number.isFinite(freshAt)) return;
+    if (Number.isFinite(ownAt) && freshAt <= ownAt) return;
+    state = { latest: String(fresh.latest), checkedAt: new Date(freshAt).toISOString() };
+  }
+
+  function info() {
+    syncFromCache();
+    const status = updateStatus(current, state.latest);
+    return {
+      ...localVersionInfo(current),
+      latest: state.latest,
+      status,
+      updateAvailable: status === 'available',
+      checkedAt: state.checkedAt,
+    };
+  }
+
+  function isStale() {
+    if (!state.checkedAt) return true;
+    return now() - Date.parse(state.checkedAt) >= intervalMs;
+  }
+
+  function persist() {
+    if (!cachePath) return;
+    try {
+      // The cache is also the status line's data source, so it stores the whole
+      // info object: running release, latest release, and update state. The
+      // merge in writeVersionCache keeps fields owned by other writers.
+      writeVersionCache(cachePath, writeStatus
+        ? info()
+        : { latest: state.latest, checkedAt: state.checkedAt });
+    } catch (error) {
+      logger('version_cache_write_failed', error);
+    }
+  }
+
+  async function refresh({ force = false } = {}) {
+    // Take a fresher check written by another process first: the status line
+    // refresher and this checker must not overwrite each other with older data.
+    syncFromCache();
+    if (!force && !isStale()) return info();
     if (inflight) return inflight;
     inflight = (async () => {
       try {
         const latest = await lookupLatest();
-        if (latest) state = { latest, checkedAt: new Date(now()).toISOString() };
-        else if (!state.checkedAt) state = { ...state, checkedAt: new Date(now()).toISOString() };
+        // A failed lookup still records the attempt: otherwise an offline
+        // machine would retry on every request and every status line render.
+        // The last known release is kept instead of being erased.
+        state = {
+          latest: latest || state.latest,
+          checkedAt: new Date(now()).toISOString(),
+        };
         persist();
       } finally {
         inflight = null;

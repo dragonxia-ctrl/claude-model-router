@@ -4,6 +4,7 @@ import './decision-engine.test.mjs';
 import './routing-fixes.test.mjs';
 import './version.test.mjs';
 import './version-status.test.mjs';
+import './auto-update.test.mjs';
 import './router-update.test.mjs';
 import './deescalation.test.mjs';
 import './config-store.test.mjs';

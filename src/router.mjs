@@ -5,12 +5,21 @@ import { createConfigStore } from './config-store.mjs';
 import { createHandler } from './handler.mjs';
 import { createTelemetry } from './telemetry.mjs';
 import { createUpdateChecker, ROUTER_VERSION } from './version.mjs';
+import { createAutoUpdater, resolveAutoUpdateSettings } from './auto-update.mjs';
 
 function defaultConfigPath() {
   return path.join(os.homedir(), '.claude', 'model-router', 'config.json');
 }
 
+function logEvent(event, detail = {}) {
+  const fields = detail instanceof Error
+    ? { message: detail.message }
+    : { ...(detail && typeof detail === 'object' ? detail : { message: String(detail) }) };
+  console.error(JSON.stringify({ event, ...fields }));
+}
+
 const configPath = process.env.CLAUDE_ROUTER_CONFIG || defaultConfigPath();
+const dataDir = path.dirname(configPath);
 const store = createConfigStore(configPath);
 const initial = store.get();
 const telemetryDirectory = process.env.CLAUDE_ROUTER_TELEMETRY_DIR
@@ -23,11 +32,14 @@ const telemetry = createTelemetry({
   maxFileBytes: initial.telemetry?.maxFileBytes || 32 * 1024 * 1024,
 });
 const updateChecker = createUpdateChecker({
-  cachePath: process.env.CLAUDE_ROUTER_VERSION_CACHE || path.join(path.dirname(configPath), 'version-cache.json'),
-  logger: (event, error) => console.error(JSON.stringify({
-    event,
-    message: error?.message || String(error),
-  })),
+  cachePath: process.env.CLAUDE_ROUTER_VERSION_CACHE || path.join(dataDir, 'version-cache.json'),
+  logger: logEvent,
+});
+const autoUpdater = createAutoUpdater({
+  dataDir,
+  getConfig: () => store.get(),
+  updateChecker,
+  logger: logEvent,
 });
 const handler = createHandler(() => store.get(), { telemetry, updateChecker });
 const server = http.createServer(handler);
@@ -38,6 +50,7 @@ server.on('clientError', (error, socket) => {
 const host = process.env.CLAUDE_ROUTER_HOST || initial.router.host || '127.0.0.1';
 const port = Number(process.env.CLAUDE_ROUTER_PORT || initial.router.port || 17861);
 server.listen(port, host, () => {
+  const autoUpdate = resolveAutoUpdateSettings(initial).auto;
   console.log(JSON.stringify({
     event: 'started',
     address: `http://${host}:${server.address().port}`,
@@ -45,8 +58,9 @@ server.listen(port, host, () => {
     revision: store.revision,
     telemetryPersistence: telemetry.settings.persist,
     release: ROUTER_VERSION,
+    autoUpdate,
   }));
-  void updateChecker.refresh().then(info => {
+  void updateChecker.refresh({ force: true }).then(info => {
     console.log(JSON.stringify({
       event: 'version_check',
       current: info.current,
@@ -54,6 +68,7 @@ server.listen(port, host, () => {
       status: info.status,
     }));
   }).catch(() => {});
+  autoUpdater.start();
 });
 if (process.platform !== 'win32') {
   process.on('SIGHUP', () => {
@@ -67,6 +82,7 @@ process.on('unhandledRejection', error => {
 for (const signal of ['SIGTERM', 'SIGINT']) {
   process.on(signal, async () => {
     console.log(JSON.stringify({ event: 'graceful_shutdown', signal }));
+    autoUpdater.stop();
     await telemetry.close().catch(() => {});
     server.close(() => process.exit(0));
     server.closeIdleConnections();

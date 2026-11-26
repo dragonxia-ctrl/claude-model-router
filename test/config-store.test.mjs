@@ -88,3 +88,27 @@ test('missing providers and short tokens are rejected', t => {
   fs.writeFileSync(file, JSON.stringify(missingToken));
   assert.throws(() => loadConfig(file), /token/);
 });
+
+test('the auto-update toggle and its paths are validated', t => {
+  const file = fixture(t);
+  const next = valid();
+  next.updates = { auto: true, source: '/srv/claude-model-router' };
+  fs.writeFileSync(file, JSON.stringify(next));
+  assert.equal(loadConfig(file).updates.auto, true);
+
+  next.updates = { auto: 'yes' };
+  fs.writeFileSync(file, JSON.stringify(next));
+  assert.throws(() => loadConfig(file), /updates\.auto/);
+
+  next.updates = { auto: false, source: '' };
+  fs.writeFileSync(file, JSON.stringify(next));
+  assert.throws(() => loadConfig(file), /updates\.source/);
+
+  next.updates = [];
+  fs.writeFileSync(file, JSON.stringify(next));
+  assert.throws(() => loadConfig(file), /updates must be an object/);
+
+  next.updates = { auto: false, launchdLabel: 'com.example.router' };
+  fs.writeFileSync(file, JSON.stringify(next));
+  assert.equal(loadConfig(file).updates.launchdLabel, 'com.example.router');
+});

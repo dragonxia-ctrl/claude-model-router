@@ -145,3 +145,86 @@ test('the check is skipped while the cached result is fresh', async t => {
   await checker.refresh();
   assert.equal(fetches, 2);
 });
+
+test('a failed refresh keeps the last release and records the attempt', async t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'router-version-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  let clock = Date.parse('2026-11-25T00:00:00.000Z');
+  let online = true;
+  const checker = createUpdateChecker({
+    current: '1.2.0',
+    cachePath: path.join(dir, 'version-cache.json'),
+    fetchImpl: async () => {
+      if (!online) throw new Error('offline');
+      return response({ tag_name: 'v1.3.0' });
+    },
+    now: () => clock,
+  });
+  await checker.refresh({ force: true });
+  assert.equal(checker.info().latest, 'v1.3.0');
+  const firstCheck = checker.info().checkedAt;
+
+  online = false;
+  clock += 60_000;
+  const info = await checker.refresh({ force: true });
+  assert.equal(info.latest, 'v1.3.0', 'the last known release survives an offline check');
+  assert.notEqual(info.checkedAt, firstCheck, 'the attempt is recorded so it backs off');
+
+  const cached = JSON.parse(fs.readFileSync(path.join(dir, 'version-cache.json'), 'utf8'));
+  assert.equal(cached.latest, 'v1.3.0');
+});
+
+test('cache writes merge fields owned by other processes', async t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'router-version-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const cachePath = path.join(dir, 'version-cache.json');
+  fs.writeFileSync(cachePath, JSON.stringify({
+    current: '1.2.0',
+    latest: 'v1.2.0',
+    installed: '1.3.0',
+    checkedAt: new Date().toISOString(),
+  }));
+  const checker = createUpdateChecker({
+    current: '1.3.0',
+    cachePath,
+    fetchImpl: async () => response({ tag_name: 'v1.4.0' }),
+  });
+  let cached = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
+  assert.equal(cached.current, '1.3.0', 'the constructor advertises the restarted release immediately');
+  assert.equal(cached.installed, '1.3.0', 'an unrelated writer field is preserved');
+
+  await checker.refresh({ force: true });
+  cached = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
+  assert.equal(cached.latest, 'v1.4.0');
+  assert.equal(cached.current, '1.3.0');
+  assert.equal(cached.installed, '1.3.0');
+});
+
+test('a release-only writer never overwrites the running release', async t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'router-version-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const cachePath = path.join(dir, 'version-cache.json');
+  fs.writeFileSync(cachePath, JSON.stringify({
+    current: '1.2.0',
+    latest: 'v1.2.0',
+    installed: '1.3.0',
+    status: 'current',
+    checkedAt: '2026-11-20T00:00:00.000Z',
+  }));
+  // The status line also reads the cache and passes the running release it
+  // saw, but only owns the release fields.
+  const checker = createUpdateChecker({
+    current: '1.2.0',
+    cachePath,
+    writeStatus: false,
+    fetchImpl: async () => response({ tag_name: 'v1.4.0' }),
+  });
+  await checker.refresh({ force: true });
+  const cached = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
+  assert.equal(cached.latest, 'v1.4.0');
+  assert.equal(cached.current, '1.2.0', 'current stays exactly as the router wrote it');
+  assert.equal(cached.installed, '1.3.0');
+  assert.equal(cached.status, 'current', 'the derived status is not overwritten either');
+});
+
+
