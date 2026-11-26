@@ -123,8 +123,13 @@ export function createActivity(options = {}) {
 
   function cells({ now, cellMs, count }) {
     const out = [];
+    // Sample on a fixed grid. Using `now` directly makes every cell's absolute
+    // time drift with the render clock (Claude Code refreshes asynchronously),
+    // so a block sitting on a request boundary flips model between refreshes.
+    // A grid keeps each cell stable and scrolls the window in whole cells.
+    const grid = Math.floor(now / cellMs) * cellMs;
     for (let index = count - 1; index >= 0; index -= 1) {
-      const at = now - index * cellMs;
+      const at = grid - index * cellMs;
       out.push({ at, model: stateAt(at) });
     }
     return out;

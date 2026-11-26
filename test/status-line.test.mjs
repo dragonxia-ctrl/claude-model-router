@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { buildStatusLine, readStatusState, sampling, versionSegment } from '../src/status-line.mjs';
+import { buildStatusLine, readStatusState, sampling, versionSegment, STATUS_WIDTH } from '../src/status-line.mjs';
 import { sessionTag } from '../src/session.mjs';
 
 const repository = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -27,10 +27,10 @@ test('the plain line names the model, shows the strip, and ends with the version
     color: false,
     version,
   });
-  assert.equal(line, '● Kimi 12s  DDK.K  router v1.3.0 · latest v1.3.0');
+  assert.equal(line, `${'● Kimi 12s'.padEnd(STATUS_WIDTH)}  DDK.K  router v1.3.0 · latest v1.3.0`);
 });
 
-test('an idle line counts time since the last request', () => {
+test('an idle line has no timer', () => {
   const line = buildStatusLine({
     cells,
     inFlight: [],
@@ -39,7 +39,23 @@ test('an idle line counts time since the last request', () => {
     color: false,
     version,
   });
-  assert.equal(line, '○ idle 45s  DDK.K  router v1.3.0 · latest v1.3.0');
+  assert.equal(line, `${'○ idle'.padEnd(STATUS_WIDTH)}  DDK.K  router v1.3.0 · latest v1.3.0`);
+});
+
+test('the strip starts in the same column for every status label', () => {
+  const render = (provider, start = now - 12000) => buildStatusLine({
+    cells,
+    inFlight: provider ? [{ provider, start }] : [],
+    now,
+    color: false,
+    version: null,
+  });
+  const column = line => line.indexOf('DDK.K');
+  const idle = column(render(null));
+  assert.equal(idle, STATUS_WIDTH + 2);
+  assert.equal(column(render('kimi')), idle);
+  // Different provider and a longer elapsed label must not move the strip.
+  assert.equal(column(render('deepseek', now - (10 * 60 + 12) * 1000)), idle);
 });
 
 test('an available update is amber and names the published release', () => {
@@ -117,9 +133,9 @@ test('narrow terminals trim the oldest cells and drop the version when needed', 
     now,
     color: false,
     version,
-    columns: 60,
+    columns: 80,
   });
-  assert.ok(wide.length <= 60);
+  assert.ok(wide.length <= 80);
   assert.match(wide, /router v1\.3\.0/);
 
   const narrow = buildStatusLine({

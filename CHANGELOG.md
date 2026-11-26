@@ -4,6 +4,26 @@ All notable changes are documented here. The format follows Keep a Changelog and
 
 The version area with the problem analysis and measured evidence lives in [VERSIONS.md](VERSIONS.md).
 
+## [1.6.1] - 2026-11-26
+
+### Fixed
+
+- The status line no longer shows an idle timer. A freshly started terminal inherited the timestamp of the last untagged request in the log and could display `○ idle 28m` before it had done anything. Idle now renders as `○ idle`; an active request still shows its elapsed time.
+- The activity strip keeps a fixed start column. Its label varies in width (`○ idle`, `● Kimi 12s`, `● DeepSeek 1m 05s`), so the strip used to shift horizontally and the narrow-terminal trim changed with it. The label is now padded to 18 columns, and the strip starts at the same position for every provider and elapsed time.
+- A leading `[deepseek]` marker now always wins. The old rule tested Kimi phrases first and treated ordinary prose such as `使用 kimi` or `use kimi` as a force-Kimi command, so `[deepseek] 为什么有时会使用kimi？` routed to Kimi — including every background request that copied the conversation text. Prompt-level overrides are now only a leading bracketed marker (or a leading `force …`); ordinary mentions and quoted markers no longer switch providers.
+- A new conversation starts on DeepSeek even when another conversation began with the same text. The conversation key now includes the terminal session tag; previously identical first messages shared one key and inherited each other's Kimi residency.
+- Activity cells are sampled on a fixed 2-second grid instead of from the drifting render clock, so a block sitting on a request boundary no longer flips colour between refreshes.
+- DeepSeek recovery probes no longer fail with HTTP 400 when an assistant turn has no thinking block. DeepSeek's thinking mode requires one on every assistant turn; plain-string turns were skipped entirely, and tool-only turns were only patched after a provider switch. Every DeepSeek request now guarantees a placeholder thinking block, so a clean de-escalation checkpoint can actually complete. A synthetic tool-use conversation that reproduced the 400 now returns 200.
+
+### Changed
+
+- `route_decision` now logs `requestedModel` (the client-facing name such as `auto` or `claude-sonnet-5`) next to the resolved provider model, so a false override can be attributed without logging prompts.
+
+### Documentation
+
+- README.md and README.zh-CN.md now name v1.6.1 as the current release instead of the stale `v2 (1.2.0)` label, and their architecture diagram shows the status line, version checker, auto-updater, and usage-probe side channels.
+- CONTRIBUTING.md records the versioning rule: small changes increment only the third number, and the first two are the maintainer's decision.
+
 ## [1.6.0] - 2026-11-26
 
 Consolidated release of the four capabilities that landed on `main` today. Routing policy is unchanged; this release makes them compose correctly and fixes the per-terminal status view.

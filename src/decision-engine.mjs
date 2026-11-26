@@ -205,9 +205,9 @@ export function createDecisionEngine(getConfig, options = {}) {
     return { decision, state, transition, checkpoint: checkpoint ? checkpointKind : null };
   }
 
-  async function resolve(body, { semantic = true } = {}) {
+  async function resolve(body, { semantic = true, session = null } = {}) {
     const config = getConfig();
-    let decision = classifyRequest(body, { limits: config.routing?.limits });
+    let decision = classifyRequest(body, { limits: config.routing?.limits, session });
     const previous = history.get(decision.conversationKey);
     const sameTask = previous?.taskKey === decision.taskKey;
     const settings = deescalationSettings(config);

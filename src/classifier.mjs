@@ -1,10 +1,21 @@
 import { hash, userEntries, selectTask } from './task-text.mjs';
 import { analyzeProgress, progressEscalations } from './progress.mjs';
 
+/**
+ * Explicit intent only. A marker must lead the message: otherwise a quoted
+ * `[kimi]` inside a document or a background prompt copied from the
+ * conversation would redirect an unrelated request. A leading `[deepseek]`
+ * therefore cannot be flipped by later discussion ("为什么要使用 kimi").
+ * Natural-language mentions such as `使用 kimi` are deliberately not
+ * instructions: they appear in normal questions and in conversation text
+ * copied into background requests.
+ */
 function explicitProvider(body, text) {
   const model = String(body.model || '').toLowerCase();
-  if (/\[kimi\]|使用\s*kimi|use\s+kimi|强制\s*kimi/i.test(text)) return 'kimi';
-  if (/\[deepseek\]|使用\s*deepseek|use\s+deepseek|强制\s*deepseek/i.test(text)) return 'deepseek';
+  const marker = /^\s*\[(kimi|deepseek)\]/i.exec(text);
+  if (marker) return marker[1].toLowerCase();
+  const command = /^\s*(?:force|强制)\s*(kimi|deepseek)\b/i.exec(text);
+  if (command) return command[1].toLowerCase();
   if (model.startsWith('kimi') || model.startsWith('claude-opus') || model.startsWith('claude-fable')) return 'kimi';
   if (model.startsWith('deepseek') || model.startsWith('claude-haiku')) return 'deepseek';
   return null;
@@ -64,7 +75,11 @@ export function classifyRequest(body, options = {}) {
   const advantages = benchmarkAdvantages(task.text, media, interactive);
   const progressReasons = progressEscalations(task.stats || analyzeProgress(messages, task.index), options.limits);
   const base = {
-    conversationKey: hash(`${body.metadata?.user_id || ''}\0${firstTask}`),
+    // Scope the conversation to the terminal session. Without the session,
+    // two new conversations whose first message is the same text (for example
+    // "hi" or a reused prompt) shared one key and inherited each other's Kimi
+    // residency, so a fresh conversation could open on Kimi.
+    conversationKey: hash(`${body.metadata?.user_id || ''}\0${options.session || ''}\0${firstTask}`),
     taskKey: hash(task.keyText || task.text), followUp: task.followUp,
     lastUserIndex: latestUser?.index ?? 0,
     latestUserText: latestUser?.text || '',

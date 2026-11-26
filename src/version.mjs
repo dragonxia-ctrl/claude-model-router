@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-export const ROUTER_VERSION = '1.6.0';
+export const ROUTER_VERSION = '1.6.1';
 export const REPOSITORY = 'dragonxia-ctrl/claude-model-router';
 
 const DEFAULT_INTERVAL_MS = 30 * 60 * 1000;

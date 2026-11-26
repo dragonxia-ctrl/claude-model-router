@@ -75,6 +75,17 @@ test('cells sample backwards from now and keep the given count', () => {
   assert.deepEqual(cells.map(cell => cell.model), ['kimi', 'kimi', 'idle', 'idle', 'idle']);
 });
 
+test('cells do not drift when the refresh clock is off the sampling grid', () => {
+  const activity = createActivity();
+  route(activity, 'r1', 'kimi', '2026-11-26T08:00:01.900Z');
+  complete(activity, 'r1', 300);
+  const early = activity.cells({ now: at('2026-11-26T08:00:10.150Z'), cellMs: 2000, count: 5 });
+  const late = activity.cells({ now: at('2026-11-26T08:00:11.850Z'), cellMs: 2000, count: 5 });
+  assert.deepEqual(early.map(cell => cell.at), late.map(cell => cell.at));
+  assert.deepEqual(early.map(cell => cell.model), late.map(cell => cell.model));
+  assert.equal(early[4].at, at('2026-11-26T08:00:10.000Z'));
+});
+
 test('in-flight requests are newest first and skip auxiliary completions', () => {
   const activity = createActivity();
   route(activity, 'a', 'deepseek', '2026-11-26T08:00:00.000Z');

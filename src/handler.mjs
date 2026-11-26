@@ -115,9 +115,13 @@ export function createHandler(configSource, options = {}) {
       let body = await readJson(req);
       // Read before sanitizing; only the hashed tag is logged, never the uuid.
       const session = sessionTagFor(req.headers, body.metadata);
+      // The client-facing model name is diagnostic only (auto, an alias, or a
+      // Claude model id); it is replaced with the provider model below.
+      const requestedModel = typeof body.model === 'string' ? body.model : null;
       const isPreview = pathname === '/v1/router/preview';
       const { decision, previousProvider, config, state, transition, checkpoint } = await engine.resolve(body, {
         semantic: pathname === '/v1/messages' || isPreview,
+        session,
       });
       const provider = { ...config.providers[decision.provider], name: decision.provider };
       if (isPreview) {
@@ -147,7 +151,7 @@ export function createHandler(configSource, options = {}) {
       console.log(JSON.stringify({
         event: 'route_decision',
         time: new Date().toISOString(), requestId, provider: provider.name,
-        model: provider.model, reason: decision.reason, source: decision.source,
+        model: provider.model, requestedModel, reason: decision.reason, source: decision.source,
         stream: Boolean(body.stream), stats: decision.stats || null,
         conversationKey: decision.conversationKey, taskKey: decision.taskKey,
         session,

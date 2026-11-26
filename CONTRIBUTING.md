@@ -109,6 +109,15 @@ Test with temporary directories, never your real `~/.claude/settings.json`.
 - [ ] The PR states exactly which platforms and integration paths were tested.
 - [ ] Paid/live tests were not run without explicit intent.
 
+## Versioning
+
+Releases use `MAJOR.MINOR.PATCH` in `package.json` and `src/version.mjs`; the two values must always match.
+
+- A small change — a bug fix, a wording change, or a self-contained improvement — increments only the third number (for example 1.6.1).
+- The maintainer decides when the first two numbers change; a pull request must not choose them.
+- Every functional change gets a short entry in `CHANGELOG.md` saying what changed.
+- The measurement log in `VERSIONS.md` and `docs/versions/` is updated only when the maintainer asks for a recorded experiment; otherwise it stays as the historical record.
+
 ## Reporting security issues
 
 Do not open a public issue for a vulnerability or exposed credential. Follow [SECURITY.md](SECURITY.md).
