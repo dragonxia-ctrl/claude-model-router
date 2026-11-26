@@ -27,8 +27,11 @@
       "minKimiRequests": 4,
       "probeRequests": 2,
       "maxAttempts": 3,
-      "maxBackoffRequests": 32,
-      "windowToolCalls": 24,
+      "maxBackoffRequests": 16,
+      "windowToolCalls": 12,
+      "windowRequests": 6,
+      "windowMs": 300000,
+      "retryAfterExhaustedRequests": 16,
       "minRecentToolCalls": 4,
       "maxFailureRate": 0.1,
       "maxMutationRepeats": 2

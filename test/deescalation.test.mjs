@@ -166,8 +166,8 @@ test('cumulative escalation failures do not block a clean recent recovery window
   assert.ok(['probe', 'deescalated'].includes(result.decision.source), result.decision.source);
 });
 
-test('maximum failed attempts keep the task on Kimi', async () => {
-  const engine = createDecisionEngine(() => config({ maxAttempts: 1 }));
+test('maximum failed attempts keep the task on Kimi when periodic retry is disabled', async () => {
+  const engine = createDecisionEngine(() => config({ maxAttempts: 1, retryAfterExhaustedRequests: 0 }));
   const messages = body();
   await round(engine, messages);
   const checkpoint = followUp(messages);
@@ -205,5 +205,63 @@ test('recovery gates and backoff arithmetic are bounded', () => {
   assert.ok(failed.blockers.length >= 3);
   assert.equal(backoffRequests(DEESCALATION_DEFAULTS, 0), 4);
   assert.equal(backoffRequests(DEESCALATION_DEFAULTS, 1), 8);
-  assert.equal(backoffRequests(DEESCALATION_DEFAULTS, 20), 32);
+  assert.equal(backoffRequests(DEESCALATION_DEFAULTS, 20), 16);
+});
+
+test('a request-count checkpoint can start a probe without new tools or a new user message', async () => {
+  const engine = createDecisionEngine(() => config({
+    minKimiRequests: 2, windowRequests: 2, windowToolCalls: 100, windowMs: 600_000,
+  }));
+  const messages = body();
+  assert.equal((await round(engine, messages)).decision.provider, 'kimi');
+  assert.equal((await round(engine, messages)).decision.source, 'sticky');
+  const result = await round(engine, messages);
+  assert.equal(result.decision.provider, 'deepseek');
+  assert.equal(result.decision.source, 'deescalation_probe');
+  assert.equal(result.checkpoint, 'request_window');
+});
+
+test('an elapsed-time checkpoint can start a probe in a slow tool loop', async () => {
+  let clock = 10_000;
+  const engine = createDecisionEngine(() => config({
+    minKimiRequests: 1, windowRequests: 100, windowToolCalls: 100, windowMs: 5_000,
+  }), { now: () => clock });
+  const messages = body();
+  await round(engine, messages);
+  clock += 1_000;
+  assert.equal((await round(engine, messages)).decision.source, 'sticky');
+  clock += 4_001;
+  const result = await round(engine, messages);
+  assert.equal(result.decision.provider, 'deepseek');
+  assert.equal(result.checkpoint, 'idle_window');
+});
+
+test('an operator can schedule a manual de-escalation exit', async () => {
+  const engine = createDecisionEngine(() => config({ windowRequests: 100, windowMs: 600_000 }));
+  const messages = body();
+  await round(engine, messages);
+  const previous = await round(engine, messages);
+  const key = previous.decision.conversationKey;
+  assert.deepEqual(engine.requestDeescalation({ conversationKey: key }), [key]);
+  assert.equal(engine.routingState()[0].forced, true);
+  assert.equal(engine.routingState()[0].taskText, undefined);
+  const result = await round(engine, messages);
+  assert.equal(result.decision.provider, 'deepseek');
+  assert.equal(result.decision.source, 'deescalation_probe');
+  assert.equal(result.checkpoint, 'manual');
+});
+
+test('exhausted normal attempts still have a bounded periodic retry exit', async () => {
+  const engine = createDecisionEngine(() => config({
+    maxAttempts: 1, maxBackoffRequests: 1, retryAfterExhaustedRequests: 1,
+    windowRequests: 100, windowMs: 600_000,
+  }));
+  const messages = body();
+  await round(engine, messages);
+  const checkpoint = followUp(messages);
+  await round(engine, checkpoint, 'upstream_5xx');
+  assert.equal((await round(engine, checkpoint)).decision.provider, 'kimi');
+  const result = await round(engine, followUp(checkpoint));
+  assert.equal(result.decision.provider, 'deepseek');
+  assert.equal(result.decision.source, 'deescalation_probe');
 });

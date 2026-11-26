@@ -12,6 +12,13 @@ export function sanitizeForProvider(body, previousProvider, nextProvider) {
     if (!message.content.length) {
       message.content = [{ type: 'text', text: '[Prior reasoning omitted during provider routing.]' }];
     }
+    if (switched && nextProvider === 'deepseek') {
+      // DeepSeek thinking models can reject replayed assistant turns that carry
+      // no reasoning content. A non-empty placeholder is the workaround used by
+      // OmniRoute for this same deepseek-flash 400 (issue #20260). The synthetic
+      // value is never persisted into the client conversation.
+      message.content.unshift({ type: 'thinking', thinking: ' ', signature: '' });
+    }
   }
   return copy;
 }

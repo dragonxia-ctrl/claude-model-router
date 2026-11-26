@@ -48,7 +48,7 @@ Claude Code 通常只为会话配置一个模型。但实际工作负载是混�
   - 很长的修改型工具调用序列；
   - 完全相同的修改操作不断重复。
 - 对较长且未被规则归类的任务，可选调用 DeepSeek 进行低成本语义分流。分流关闭 thinking、只返回小型 JSON、结果有缓存；任何错误、超时或低置信度都安全回退到 DeepSeek。
-- 同一任务的 Kimi 粘性有上限：在工具循环内避免切换，但在检查点（新用户消息，或长回合内每 24 次新工具调用的中途复查）且近期执行已恢复时，会试探性降级到 DeepSeek；失败则回退并指数退避。
+- 同一任务的 Kimi 粘性有上限：在工具循环内避免切换，但在检查点（新用户消息，或长回合内每 12 次新工具调用 / 每 6 次 Kimi 请求 / 每 5 分钟的中途复查）且近期执行已恢复时，会试探性降级到 DeepSeek；失败则回退并指数退避。
 - 跨供应商时清理不兼容的 thinking / redacted_thinking 内容块。
 - 在 Claude Code 原生状态栏显示当前 router 版本与最新发布版本；有更新时高亮提示（命令行可用 `claude-router version` 查看同样信息）。
 - 支持通过模型名或提示词中的 `[kimi]` / `[deepseek]` 显式指定供应商。
@@ -124,7 +124,7 @@ flowchart LR
 | 前沿数学、复杂视觉推理 | Kimi 有优势 | Kimi |
 | 视频媒体块 | 只有 Kimi 能处理视频 | Kimi（硬能力，不自动降级） |
 
-Kimi 不再永久粘滞。默认完成 4 次 Kimi 请求后，如果近期执行窗口干净且到达检查点，会发起 2 次 DeepSeek 探针请求；检查点可以是新用户消息，也可以是长回合内每 24 次新工具调用的中途复查，因此单个长回合不再无限期锁定 Kimi。出现新失败则回到 Kimi，并采用有上限的指数退避。只有真正的视频媒体块不会自动降级；文本里提到视频不算能力要求，非流式的辅助调用保持默认供应商。显式模型选择始终优先。
+Kimi 不再永久粘滞。默认完成 4 次 Kimi 请求后，如果近期执行窗口干净且到达检查点，会发起 2 次 DeepSeek 探针请求；检查点是新用户消息，或长回合内每 12 次新工具调用、每 6 次 Kimi 请求、每 5 分钟（以先到者为准）的中途复查，因此单个长回合不再无限期锁定 Kimi。出现新失败则回到 Kimi，并采用有上限的指数退避；连续 3 次探针失败后，会在超过 16 次 Kimi 请求后的第一个干净检查点重新尝试，而不是永久锁定。只有真正的视频媒体块不会自动降级；文本里提到视频不算能力要求，非流式的辅助调用保持默认供应商。显式模型选择始终优先。`claude-router state` 和 `claude-router deescalate` 可以查看当前驻留状态并手动安排恢复检查点。
 
 完整规则、可调参数和开源设计参考见 [docs/routing-policy.md](docs/routing-policy.md)。
 
@@ -360,7 +360,11 @@ node bin/claude-router.mjs verify
       "minKimiRequests": 4,
       "probeRequests": 2,
       "maxAttempts": 3,
-      "maxBackoffRequests": 32
+      "maxBackoffRequests": 16,
+      "windowToolCalls": 12,
+      "windowRequests": 6,
+      "windowMs": 300000,
+      "retryAfterExhaustedRequests": 16
     }
   },
   "telemetry": {
@@ -450,6 +454,8 @@ claude-router update --auto        # 查看开关、最近一次尝试及其错�
 | `GET /metrics/json` | 鉴权后的 JSON 遥测快照 |
 | `GET /v1/models` | 向 Claude Code 暴露 `auto`、DeepSeek、Kimi |
 | `POST /v1/router/preview` | 只预览路由决策，不调用所选上游 |
+| `GET /v1/router/state` | 需认证：查看内存中的 Kimi 驻留与探针状态 |
+| `POST /v1/router/deescalate` | 需认证：手动安排恢复检查点（`conversationKey` 或 `all: true`） |
 | `POST /v1/messages` | 主代理端点 |
 | `POST /v1/messages/count_tokens` | 通过所选供应商计算 token |
 

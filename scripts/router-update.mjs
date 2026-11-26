@@ -87,6 +87,7 @@ export function deployPlan(sourceDir) {
   }
   files.set('version-status.mjs', path.join(sourceDir, 'scripts', 'version-status.mjs'));
   files.set('router-update.mjs', path.join(sourceDir, 'scripts', 'router-update.mjs'));
+  files.set('router-control.mjs', path.join(sourceDir, 'scripts', 'router-control.mjs'));
   return files;
 }
 

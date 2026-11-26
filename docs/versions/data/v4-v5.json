@@ -1,0 +1,870 @@
+{
+  "generatedAt": "2026-11-26T08:38:28.252Z",
+  "experiment": "v4 -> v5 de-escalation checkpoint replay",
+  "method": "Interactive route_decision events only. Consecutive sticky events form a run. v4 opportunities use 24 new tool calls; v5 opportunities use 12 new tool calls OR 6 requests OR 5 elapsed minutes. New-user checkpoints, residency, clean-window gates, backoff and actual future provider responses are not simulated. Checkpoint opportunities are therefore not claimed as completed de-escalations.",
+  "settings": {
+    "v4": {
+      "windowToolCalls": 24
+    },
+    "v5": {
+      "windowToolCalls": 12,
+      "windowRequests": 6,
+      "windowMs": 300000
+    }
+  },
+  "window": {
+    "from": "2026-11-25T04:09:01.217Z",
+    "to": "2026-11-26T08:38:27.294Z"
+  },
+  "totals": {
+    "interactiveRequests": 1773,
+    "stickyRequests": 548,
+    "stickyRuns": 38,
+    "runsWithToolDeltaBelow24": 33,
+    "runsWithV4Checkpoint": 5,
+    "runsWithV5Checkpoint": 28,
+    "v4CheckpointOpportunities": 6,
+    "v5CheckpointOpportunities": 68,
+    "v5CheckpointKinds": {
+      "request_window": 63,
+      "tool_window": 3,
+      "idle_window": 2
+    },
+    "longestStickyRunRequests": 51,
+    "longestStickyRunMinutes": 27.72,
+    "probes": 10,
+    "probeHttp400": 10
+  },
+  "probes": [
+    {
+      "time": "2026-11-25T13:32:03.923Z",
+      "conversation": "c8344dfc66",
+      "toolCalls": 64,
+      "outcome": "upstream_4xx",
+      "httpStatus": 400
+    },
+    {
+      "time": "2026-11-25T14:01:21.229Z",
+      "conversation": "ea4ff0cb70",
+      "toolCalls": 88,
+      "outcome": "upstream_4xx",
+      "httpStatus": 400
+    },
+    {
+      "time": "2026-11-26T02:29:17.752Z",
+      "conversation": "08e92d4698",
+      "toolCalls": 66,
+      "outcome": "upstream_4xx",
+      "httpStatus": 400
+    },
+    {
+      "time": "2026-11-26T02:37:59.965Z",
+      "conversation": "08e92d4698",
+      "toolCalls": 90,
+      "outcome": "upstream_4xx",
+      "httpStatus": 400
+    },
+    {
+      "time": "2026-11-26T02:43:22.107Z",
+      "conversation": "08e92d4698",
+      "toolCalls": 114,
+      "outcome": "upstream_4xx",
+      "httpStatus": 400
+    },
+    {
+      "time": "2026-11-26T07:57:57.769Z",
+      "conversation": "fa15b86f15",
+      "toolCalls": 67,
+      "outcome": "upstream_4xx",
+      "httpStatus": 400
+    },
+    {
+      "time": "2026-11-26T08:07:45.630Z",
+      "conversation": "fa15b86f15",
+      "toolCalls": 116,
+      "outcome": "upstream_4xx",
+      "httpStatus": 400
+    },
+    {
+      "time": "2026-11-26T08:28:37.312Z",
+      "conversation": "c2aa20265a",
+      "toolCalls": 60,
+      "outcome": "upstream_4xx",
+      "httpStatus": 400
+    },
+    {
+      "time": "2026-11-26T08:35:04.492Z",
+      "conversation": "c2aa20265a",
+      "toolCalls": 84,
+      "outcome": "upstream_4xx",
+      "httpStatus": 400
+    },
+    {
+      "time": "2026-11-26T08:35:47.164Z",
+      "conversation": "5bc6938684",
+      "toolCalls": 59,
+      "outcome": "upstream_4xx",
+      "httpStatus": 400
+    }
+  ],
+  "runs": [
+    {
+      "conversation": "legacy",
+      "start": "2026-11-25T11:02:50.839Z",
+      "end": "2026-11-25T11:30:34.064Z",
+      "requests": 51,
+      "durationMs": 1663225,
+      "toolCallsAtStart": 21,
+      "toolCallsAtEnd": 79,
+      "toolDelta": 58,
+      "v4Checkpoints": 2,
+      "v5Checkpoints": 8,
+      "v5CheckpointKinds": {
+        "request_window": 8
+      },
+      "v5FirstCheckpoint": {
+        "index": 6,
+        "at": "2026-11-25T11:06:27.627Z",
+        "kind": "request_window",
+        "afterRequests": 6,
+        "afterMs": 216788
+      }
+    },
+    {
+      "conversation": "fa15b86f15",
+      "start": "2026-11-26T07:57:57.941Z",
+      "end": "2026-11-26T08:07:37.229Z",
+      "requests": 45,
+      "durationMs": 579288,
+      "toolCallsAtStart": 67,
+      "toolCallsAtEnd": 115,
+      "toolDelta": 48,
+      "v4Checkpoints": 1,
+      "v5Checkpoints": 7,
+      "v5CheckpointKinds": {
+        "request_window": 7
+      },
+      "v5FirstCheckpoint": {
+        "index": 6,
+        "at": "2026-11-26T07:59:15.442Z",
+        "kind": "request_window",
+        "afterRequests": 6,
+        "afterMs": 77501
+      }
+    },
+    {
+      "conversation": "fa15b86f15",
+      "start": "2026-11-26T07:42:05.303Z",
+      "end": "2026-11-26T07:57:44.082Z",
+      "requests": 38,
+      "durationMs": 938779,
+      "toolCallsAtStart": 23,
+      "toolCallsAtEnd": 66,
+      "toolDelta": 43,
+      "v4Checkpoints": 1,
+      "v5Checkpoints": 6,
+      "v5CheckpointKinds": {
+        "request_window": 6
+      },
+      "v5FirstCheckpoint": {
+        "index": 6,
+        "at": "2026-11-26T07:46:02.957Z",
+        "kind": "request_window",
+        "afterRequests": 6,
+        "afterMs": 237654
+      }
+    },
+    {
+      "conversation": "ea4ff0cb70",
+      "start": "2026-11-25T13:49:28.238Z",
+      "end": "2026-11-25T14:01:03.683Z",
+      "requests": 29,
+      "durationMs": 695445,
+      "toolCallsAtStart": 40,
+      "toolCallsAtEnd": 87,
+      "toolDelta": 47,
+      "v4Checkpoints": 1,
+      "v5Checkpoints": 4,
+      "v5CheckpointKinds": {
+        "request_window": 3,
+        "tool_window": 1
+      },
+      "v5FirstCheckpoint": {
+        "index": 6,
+        "at": "2026-11-25T13:51:33.385Z",
+        "kind": "request_window",
+        "afterRequests": 6,
+        "afterMs": 125147
+      }
+    },
+    {
+      "conversation": "08e92d4698",
+      "start": "2026-11-26T02:29:18.111Z",
+      "end": "2026-11-26T02:37:53.106Z",
+      "requests": 24,
+      "durationMs": 514995,
+      "toolCallsAtStart": 66,
+      "toolCallsAtEnd": 89,
+      "toolDelta": 23,
+      "v4Checkpoints": 0,
+      "v5Checkpoints": 3,
+      "v5CheckpointKinds": {
+        "request_window": 3
+      },
+      "v5FirstCheckpoint": {
+        "index": 6,
+        "at": "2026-11-26T02:31:23.022Z",
+        "kind": "request_window",
+        "afterRequests": 6,
+        "afterMs": 124911
+      }
+    },
+    {
+      "conversation": "08e92d4698",
+      "start": "2026-11-26T02:38:01.981Z",
+      "end": "2026-11-26T02:42:58.303Z",
+      "requests": 24,
+      "durationMs": 296322,
+      "toolCallsAtStart": 90,
+      "toolCallsAtEnd": 113,
+      "toolDelta": 23,
+      "v4Checkpoints": 0,
+      "v5Checkpoints": 3,
+      "v5CheckpointKinds": {
+        "request_window": 3
+      },
+      "v5FirstCheckpoint": {
+        "index": 6,
+        "at": "2026-11-26T02:39:58.982Z",
+        "kind": "request_window",
+        "afterRequests": 6,
+        "afterMs": 117001
+      }
+    },
+    {
+      "conversation": "77f955eb85",
+      "start": "2026-11-26T07:54:42.527Z",
+      "end": "2026-11-26T08:01:27.189Z",
+      "requests": 24,
+      "durationMs": 404662,
+      "toolCallsAtStart": 24,
+      "toolCallsAtEnd": 53,
+      "toolDelta": 29,
+      "v4Checkpoints": 1,
+      "v5Checkpoints": 3,
+      "v5CheckpointKinds": {
+        "request_window": 3
+      },
+      "v5FirstCheckpoint": {
+        "index": 6,
+        "at": "2026-11-26T07:57:36.838Z",
+        "kind": "request_window",
+        "afterRequests": 6,
+        "afterMs": 174311
+      }
+    },
+    {
+      "conversation": "08e92d4698",
+      "start": "2026-11-26T02:23:49.333Z",
+      "end": "2026-11-26T02:28:39.549Z",
+      "requests": 23,
+      "durationMs": 290216,
+      "toolCallsAtStart": 43,
+      "toolCallsAtEnd": 65,
+      "toolDelta": 22,
+      "v4Checkpoints": 0,
+      "v5Checkpoints": 3,
+      "v5CheckpointKinds": {
+        "request_window": 3
+      },
+      "v5FirstCheckpoint": {
+        "index": 6,
+        "at": "2026-11-26T02:25:38.746Z",
+        "kind": "request_window",
+        "afterRequests": 6,
+        "afterMs": 109413
+      }
+    },
+    {
+      "conversation": "5bc6938684",
+      "start": "2026-11-26T08:29:14.993Z",
+      "end": "2026-11-26T08:35:39.717Z",
+      "requests": 23,
+      "durationMs": 384724,
+      "toolCallsAtStart": 36,
+      "toolCallsAtEnd": 58,
+      "toolDelta": 22,
+      "v4Checkpoints": 0,
+      "v5Checkpoints": 3,
+      "v5CheckpointKinds": {
+        "request_window": 3
+      },
+      "v5FirstCheckpoint": {
+        "index": 6,
+        "at": "2026-11-26T08:31:25.311Z",
+        "kind": "request_window",
+        "afterRequests": 6,
+        "afterMs": 130318
+      }
+    },
+    {
+      "conversation": "legacy",
+      "start": "2026-11-25T11:51:51.040Z",
+      "end": "2026-11-25T11:59:56.660Z",
+      "requests": 20,
+      "durationMs": 485620,
+      "toolCallsAtStart": 22,
+      "toolCallsAtEnd": 41,
+      "toolDelta": 19,
+      "v4Checkpoints": 0,
+      "v5Checkpoints": 3,
+      "v5CheckpointKinds": {
+        "request_window": 3
+      },
+      "v5FirstCheckpoint": {
+        "index": 6,
+        "at": "2026-11-25T11:54:58.936Z",
+        "kind": "request_window",
+        "afterRequests": 6,
+        "afterMs": 187896
+      }
+    },
+    {
+      "conversation": "c2aa20265a",
+      "start": "2026-11-26T08:28:37.584Z",
+      "end": "2026-11-26T08:34:57.136Z",
+      "requests": 20,
+      "durationMs": 379552,
+      "toolCallsAtStart": 60,
+      "toolCallsAtEnd": 83,
+      "toolDelta": 23,
+      "v4Checkpoints": 0,
+      "v5Checkpoints": 3,
+      "v5CheckpointKinds": {
+        "request_window": 3
+      },
+      "v5FirstCheckpoint": {
+        "index": 6,
+        "at": "2026-11-26T08:29:33.430Z",
+        "kind": "request_window",
+        "afterRequests": 6,
+        "afterMs": 55846
+      }
+    },
+    {
+      "conversation": "08e92d4698",
+      "start": "2026-11-26T02:43:22.690Z",
+      "end": "2026-11-26T02:53:47.546Z",
+      "requests": 17,
+      "durationMs": 624856,
+      "toolCallsAtStart": 114,
+      "toolCallsAtEnd": 130,
+      "toolDelta": 16,
+      "v4Checkpoints": 0,
+      "v5Checkpoints": 3,
+      "v5CheckpointKinds": {
+        "request_window": 2,
+        "idle_window": 1
+      },
+      "v5FirstCheckpoint": {
+        "index": 6,
+        "at": "2026-11-26T02:45:06.460Z",
+        "kind": "request_window",
+        "afterRequests": 6,
+        "afterMs": 103770
+      }
+    },
+    {
+      "conversation": "ae2a3285da",
+      "start": "2026-11-26T08:13:57.962Z",
+      "end": "2026-11-26T08:17:04.051Z",
+      "requests": 17,
+      "durationMs": 186089,
+      "toolCallsAtStart": 29,
+      "toolCallsAtEnd": 51,
+      "toolDelta": 22,
+      "v4Checkpoints": 0,
+      "v5Checkpoints": 2,
+      "v5CheckpointKinds": {
+        "request_window": 2
+      },
+      "v5FirstCheckpoint": {
+        "index": 6,
+        "at": "2026-11-26T08:14:54.111Z",
+        "kind": "request_window",
+        "afterRequests": 6,
+        "afterMs": 56149
+      }
+    },
+    {
+      "conversation": "ea4ff0cb70",
+      "start": "2026-11-25T14:10:08.189Z",
+      "end": "2026-11-25T14:17:11.621Z",
+      "requests": 13,
+      "durationMs": 423432,
+      "toolCallsAtStart": 110,
+      "toolCallsAtEnd": 126,
+      "toolDelta": 16,
+      "v4Checkpoints": 0,
+      "v5Checkpoints": 2,
+      "v5CheckpointKinds": {
+        "request_window": 2
+      },
+      "v5FirstCheckpoint": {
+        "index": 6,
+        "at": "2026-11-25T14:14:15.462Z",
+        "kind": "request_window",
+        "afterRequests": 6,
+        "afterMs": 247273
+      }
+    },
+    {
+      "conversation": "c2aa20265a",
+      "start": "2026-11-26T08:35:04.711Z",
+      "end": "2026-11-26T08:38:27.294Z",
+      "requests": 13,
+      "durationMs": 202583,
+      "toolCallsAtStart": 84,
+      "toolCallsAtEnd": 96,
+      "toolDelta": 12,
+      "v4Checkpoints": 0,
+      "v5Checkpoints": 2,
+      "v5CheckpointKinds": {
+        "request_window": 2
+      },
+      "v5FirstCheckpoint": {
+        "index": 6,
+        "at": "2026-11-26T08:36:26.619Z",
+        "kind": "request_window",
+        "afterRequests": 6,
+        "afterMs": 81908
+      }
+    },
+    {
+      "conversation": "ea4ff0cb70",
+      "start": "2026-11-25T14:01:21.797Z",
+      "end": "2026-11-25T14:06:51.369Z",
+      "requests": 12,
+      "durationMs": 329572,
+      "toolCallsAtStart": 88,
+      "toolCallsAtEnd": 103,
+      "toolDelta": 15,
+      "v4Checkpoints": 0,
+      "v5Checkpoints": 1,
+      "v5CheckpointKinds": {
+        "request_window": 1
+      },
+      "v5FirstCheckpoint": {
+        "index": 6,
+        "at": "2026-11-25T14:04:30.882Z",
+        "kind": "request_window",
+        "afterRequests": 6,
+        "afterMs": 189085
+      }
+    },
+    {
+      "conversation": "ea4ff0cb70",
+      "start": "2026-11-25T14:18:20.211Z",
+      "end": "2026-11-25T14:25:01.746Z",
+      "requests": 12,
+      "durationMs": 401535,
+      "toolCallsAtStart": 128,
+      "toolCallsAtEnd": 143,
+      "toolDelta": 15,
+      "v4Checkpoints": 0,
+      "v5Checkpoints": 1,
+      "v5CheckpointKinds": {
+        "request_window": 1
+      },
+      "v5FirstCheckpoint": {
+        "index": 6,
+        "at": "2026-11-25T14:20:47.245Z",
+        "kind": "request_window",
+        "afterRequests": 6,
+        "afterMs": 147034
+      }
+    },
+    {
+      "conversation": "5bc6938684",
+      "start": "2026-11-26T08:35:47.335Z",
+      "end": "2026-11-26T08:38:13.250Z",
+      "requests": 12,
+      "durationMs": 145915,
+      "toolCallsAtStart": 59,
+      "toolCallsAtEnd": 70,
+      "toolDelta": 11,
+      "v4Checkpoints": 0,
+      "v5Checkpoints": 1,
+      "v5CheckpointKinds": {
+        "request_window": 1
+      },
+      "v5FirstCheckpoint": {
+        "index": 6,
+        "at": "2026-11-26T08:37:17.986Z",
+        "kind": "request_window",
+        "afterRequests": 6,
+        "afterMs": 90651
+      }
+    },
+    {
+      "conversation": "legacy",
+      "start": "2026-11-25T11:39:16.133Z",
+      "end": "2026-11-25T11:44:16.787Z",
+      "requests": 10,
+      "durationMs": 300654,
+      "toolCallsAtStart": 23,
+      "toolCallsAtEnd": 32,
+      "toolDelta": 9,
+      "v4Checkpoints": 0,
+      "v5Checkpoints": 1,
+      "v5CheckpointKinds": {
+        "request_window": 1
+      },
+      "v5FirstCheckpoint": {
+        "index": 6,
+        "at": "2026-11-25T11:43:20.927Z",
+        "kind": "request_window",
+        "afterRequests": 6,
+        "afterMs": 244794
+      }
+    },
+    {
+      "conversation": "c8344dfc66",
+      "start": "2026-11-25T13:27:07.396Z",
+      "end": "2026-11-25T13:31:49.638Z",
+      "requests": 10,
+      "durationMs": 282242,
+      "toolCallsAtStart": 41,
+      "toolCallsAtEnd": 63,
+      "toolDelta": 22,
+      "v4Checkpoints": 0,
+      "v5Checkpoints": 1,
+      "v5CheckpointKinds": {
+        "tool_window": 1
+      },
+      "v5FirstCheckpoint": {
+        "index": 6,
+        "at": "2026-11-25T13:30:14.042Z",
+        "kind": "tool_window",
+        "afterRequests": 6,
+        "afterMs": 186646
+      }
+    },
+    {
+      "conversation": "ea4ff0cb70",
+      "start": "2026-11-25T15:37:14.845Z",
+      "end": "2026-11-25T15:41:07.478Z",
+      "requests": 10,
+      "durationMs": 232633,
+      "toolCallsAtStart": 26,
+      "toolCallsAtEnd": 35,
+      "toolDelta": 9,
+      "v4Checkpoints": 0,
+      "v5Checkpoints": 1,
+      "v5CheckpointKinds": {
+        "request_window": 1
+      },
+      "v5FirstCheckpoint": {
+        "index": 6,
+        "at": "2026-11-25T15:40:06.058Z",
+        "kind": "request_window",
+        "afterRequests": 6,
+        "afterMs": 171213
+      }
+    },
+    {
+      "conversation": "08e92d4698",
+      "start": "2026-11-25T16:19:30.837Z",
+      "end": "2026-11-25T16:29:24.105Z",
+      "requests": 10,
+      "durationMs": 593268,
+      "toolCallsAtStart": 27,
+      "toolCallsAtEnd": 35,
+      "toolDelta": 8,
+      "v4Checkpoints": 0,
+      "v5Checkpoints": 1,
+      "v5CheckpointKinds": {
+        "idle_window": 1
+      },
+      "v5FirstCheckpoint": {
+        "index": 5,
+        "at": "2026-11-25T16:28:33.808Z",
+        "kind": "idle_window",
+        "afterRequests": 5,
+        "afterMs": 542971
+      }
+    },
+    {
+      "conversation": "fa15b86f15",
+      "start": "2026-11-26T08:07:45.895Z",
+      "end": "2026-11-26T08:12:58.923Z",
+      "requests": 10,
+      "durationMs": 313028,
+      "toolCallsAtStart": 116,
+      "toolCallsAtEnd": 124,
+      "toolDelta": 8,
+      "v4Checkpoints": 0,
+      "v5Checkpoints": 1,
+      "v5CheckpointKinds": {
+        "request_window": 1
+      },
+      "v5FirstCheckpoint": {
+        "index": 6,
+        "at": "2026-11-26T08:11:10.878Z",
+        "kind": "request_window",
+        "afterRequests": 6,
+        "afterMs": 204983
+      }
+    },
+    {
+      "conversation": "5bc6938684",
+      "start": "2026-11-26T08:15:58.974Z",
+      "end": "2026-11-26T08:18:22.464Z",
+      "requests": 10,
+      "durationMs": 143490,
+      "toolCallsAtStart": 38,
+      "toolCallsAtEnd": 47,
+      "toolDelta": 9,
+      "v4Checkpoints": 0,
+      "v5Checkpoints": 1,
+      "v5CheckpointKinds": {
+        "request_window": 1
+      },
+      "v5FirstCheckpoint": {
+        "index": 6,
+        "at": "2026-11-26T08:17:43.300Z",
+        "kind": "request_window",
+        "afterRequests": 6,
+        "afterMs": 104326
+      }
+    },
+    {
+      "conversation": "c2aa20265a",
+      "start": "2026-11-26T08:25:54.913Z",
+      "end": "2026-11-26T08:28:26.064Z",
+      "requests": 10,
+      "durationMs": 151151,
+      "toolCallsAtStart": 38,
+      "toolCallsAtEnd": 58,
+      "toolDelta": 20,
+      "v4Checkpoints": 0,
+      "v5Checkpoints": 1,
+      "v5CheckpointKinds": {
+        "tool_window": 1
+      },
+      "v5FirstCheckpoint": {
+        "index": 5,
+        "at": "2026-11-26T08:27:10.039Z",
+        "kind": "tool_window",
+        "afterRequests": 5,
+        "afterMs": 75126
+      }
+    },
+    {
+      "conversation": "legacy",
+      "start": "2026-11-25T04:09:23.061Z",
+      "end": "2026-11-25T04:10:56.592Z",
+      "requests": 9,
+      "durationMs": 93531,
+      "toolCallsAtStart": 33,
+      "toolCallsAtEnd": 44,
+      "toolDelta": 11,
+      "v4Checkpoints": 0,
+      "v5Checkpoints": 1,
+      "v5CheckpointKinds": {
+        "request_window": 1
+      },
+      "v5FirstCheckpoint": {
+        "index": 6,
+        "at": "2026-11-25T04:10:19.724Z",
+        "kind": "request_window",
+        "afterRequests": 6,
+        "afterMs": 56663
+      }
+    },
+    {
+      "conversation": "fa15b86f15",
+      "start": "2026-11-26T02:55:18.792Z",
+      "end": "2026-11-26T02:57:33.691Z",
+      "requests": 7,
+      "durationMs": 134899,
+      "toolCallsAtStart": 1,
+      "toolCallsAtEnd": 9,
+      "toolDelta": 8,
+      "v4Checkpoints": 0,
+      "v5Checkpoints": 1,
+      "v5CheckpointKinds": {
+        "request_window": 1
+      },
+      "v5FirstCheckpoint": {
+        "index": 6,
+        "at": "2026-11-26T02:57:33.691Z",
+        "kind": "request_window",
+        "afterRequests": 6,
+        "afterMs": 134899
+      }
+    },
+    {
+      "conversation": "fa15b86f15",
+      "start": "2026-11-26T02:58:21.903Z",
+      "end": "2026-11-26T03:00:30.902Z",
+      "requests": 7,
+      "durationMs": 128999,
+      "toolCallsAtStart": 12,
+      "toolCallsAtEnd": 20,
+      "toolDelta": 8,
+      "v4Checkpoints": 0,
+      "v5Checkpoints": 1,
+      "v5CheckpointKinds": {
+        "request_window": 1
+      },
+      "v5FirstCheckpoint": {
+        "index": 6,
+        "at": "2026-11-26T03:00:30.902Z",
+        "kind": "request_window",
+        "afterRequests": 6,
+        "afterMs": 128999
+      }
+    },
+    {
+      "conversation": "ea4ff0cb70",
+      "start": "2026-11-25T14:32:38.004Z",
+      "end": "2026-11-25T14:35:34.914Z",
+      "requests": 6,
+      "durationMs": 176910,
+      "toolCallsAtStart": 22,
+      "toolCallsAtEnd": 27,
+      "toolDelta": 5,
+      "v4Checkpoints": 0,
+      "v5Checkpoints": 0,
+      "v5CheckpointKinds": {},
+      "v5FirstCheckpoint": null
+    },
+    {
+      "conversation": "1a80b4c8f7",
+      "start": "2026-11-26T08:27:33.500Z",
+      "end": "2026-11-26T08:29:22.162Z",
+      "requests": 6,
+      "durationMs": 108662,
+      "toolCallsAtStart": 27,
+      "toolCallsAtEnd": 33,
+      "toolDelta": 6,
+      "v4Checkpoints": 0,
+      "v5Checkpoints": 0,
+      "v5CheckpointKinds": {},
+      "v5FirstCheckpoint": null
+    },
+    {
+      "conversation": "ea4ff0cb70",
+      "start": "2026-11-25T14:38:31.061Z",
+      "end": "2026-11-25T14:40:01.934Z",
+      "requests": 5,
+      "durationMs": 90873,
+      "toolCallsAtStart": 38,
+      "toolCallsAtEnd": 42,
+      "toolDelta": 4,
+      "v4Checkpoints": 0,
+      "v5Checkpoints": 0,
+      "v5CheckpointKinds": {},
+      "v5FirstCheckpoint": null
+    },
+    {
+      "conversation": "ea4ff0cb70",
+      "start": "2026-11-25T14:07:58.396Z",
+      "end": "2026-11-25T14:09:19.562Z",
+      "requests": 4,
+      "durationMs": 81166,
+      "toolCallsAtStart": 105,
+      "toolCallsAtEnd": 108,
+      "toolDelta": 3,
+      "v4Checkpoints": 0,
+      "v5Checkpoints": 0,
+      "v5CheckpointKinds": {},
+      "v5FirstCheckpoint": null
+    },
+    {
+      "conversation": "ea4ff0cb70",
+      "start": "2026-11-25T14:36:08.872Z",
+      "end": "2026-11-25T14:37:43.456Z",
+      "requests": 4,
+      "durationMs": 94584,
+      "toolCallsAtStart": 29,
+      "toolCallsAtEnd": 36,
+      "toolDelta": 7,
+      "v4Checkpoints": 0,
+      "v5Checkpoints": 0,
+      "v5CheckpointKinds": {},
+      "v5FirstCheckpoint": null
+    },
+    {
+      "conversation": "ea4ff0cb70",
+      "start": "2026-11-25T15:25:52.149Z",
+      "end": "2026-11-25T15:26:47.694Z",
+      "requests": 4,
+      "durationMs": 55545,
+      "toolCallsAtStart": 22,
+      "toolCallsAtEnd": 25,
+      "toolDelta": 3,
+      "v4Checkpoints": 0,
+      "v5Checkpoints": 0,
+      "v5CheckpointKinds": {},
+      "v5FirstCheckpoint": null
+    },
+    {
+      "conversation": "08e92d4698",
+      "start": "2026-11-25T16:29:56.473Z",
+      "end": "2026-11-25T16:30:36.457Z",
+      "requests": 4,
+      "durationMs": 39984,
+      "toolCallsAtStart": 37,
+      "toolCallsAtEnd": 40,
+      "toolDelta": 3,
+      "v4Checkpoints": 0,
+      "v5Checkpoints": 0,
+      "v5CheckpointKinds": {},
+      "v5FirstCheckpoint": null
+    },
+    {
+      "conversation": "c8344dfc66",
+      "start": "2026-11-25T13:32:04.639Z",
+      "end": "2026-11-25T13:32:58.307Z",
+      "requests": 3,
+      "durationMs": 53668,
+      "toolCallsAtStart": 64,
+      "toolCallsAtEnd": 66,
+      "toolDelta": 2,
+      "v4Checkpoints": 0,
+      "v5Checkpoints": 0,
+      "v5CheckpointKinds": {},
+      "v5FirstCheckpoint": null
+    },
+    {
+      "conversation": "legacy",
+      "start": "2026-11-25T04:20:59.929Z",
+      "end": "2026-11-25T04:20:59.929Z",
+      "requests": 1,
+      "durationMs": 0,
+      "toolCallsAtStart": 24,
+      "toolCallsAtEnd": 24,
+      "toolDelta": 0,
+      "v4Checkpoints": 0,
+      "v5Checkpoints": 0,
+      "v5CheckpointKinds": {},
+      "v5FirstCheckpoint": null
+    },
+    {
+      "conversation": "ea4ff0cb70",
+      "start": "2026-11-25T13:48:38.011Z",
+      "end": "2026-11-25T13:48:38.011Z",
+      "requests": 1,
+      "durationMs": 0,
+      "toolCallsAtStart": 38,
+      "toolCallsAtEnd": 38,
+      "toolDelta": 0,
+      "v4Checkpoints": 0,
+      "v5Checkpoints": 0,
+      "v5CheckpointKinds": {},
+      "v5FirstCheckpoint": null
+    }
+  ]
+}

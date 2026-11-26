@@ -3,8 +3,15 @@ export const DEESCALATION_DEFAULTS = Object.freeze({
   minKimiRequests: 4,
   probeRequests: 2,
   maxAttempts: 3,
-  maxBackoffRequests: 32,
-  windowToolCalls: 24,
+  maxBackoffRequests: 16,
+  // Recovery is reviewed on several independent clocks. A clean task should not
+  // need 24 new tool calls (or a new human message) before it can leave Kimi.
+  windowToolCalls: 12,
+  windowRequests: 6,
+  windowMs: 300_000,
+  // maxAttempts controls the normal backoff cycle, not a permanent Kimi lock.
+  // Set this to 0 to retain the old "stop probing after maxAttempts" behaviour.
+  retryAfterExhaustedRequests: 16,
   minRecentToolCalls: 4,
   maxFailureRate: 0.1,
   maxMutationRepeats: 2,
