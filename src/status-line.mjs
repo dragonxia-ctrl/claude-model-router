@@ -148,9 +148,9 @@ export function buildStatusLine(state) {
     const latest = inFlight.length ? inFlight[0] : null;
     if (latest) {
       statusPlain = `● ${NAMES[latest.provider]} ${formatElapsed(now - latest.start)}`;
-    } else if (lastEventAt != null) {
-      statusPlain = `○ idle ${formatElapsed(now - lastEventAt)}`;
     } else {
+      // No timer when idle: a fresh terminal must not inherit the age of the
+      // last untagged request in the log and claim it has been idle for 28m.
       statusPlain = '○ idle';
     }
 

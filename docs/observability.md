@@ -108,8 +108,8 @@ Files are named `requests-YYYY-MM-DD[-n].jsonl`, created with owner-only permiss
 
 ```json
 {
-  "current": "1.6.0",
-  "latest": "v1.6.0",
+  "current": "1.6.1",
+  "latest": "v1.6.1",
   "status": "current",
   "updateAvailable": false,
   "checkedAt": "2026-11-26T13:50:00.000Z",
@@ -137,7 +137,7 @@ The router checks the public GitHub `releases/latest` endpoint of its own reposi
 }
 ```
 
-It prints `router v1.6.0 · latest v1.6.0` dimmed, `router v1.6.0 · v1.6.1 available` in amber when an upgrade exists, and `router v1.6.0 · update installed, restart to update` in amber when the deployed `version.mjs` is newer than the running process. With automatic updates on, an upgrade notice ends with `· auto-update on`, `· auto-update running`, or `· auto-update failed`. It prints nothing when the router has never written a version cache.
+It prints `router v1.6.1 · latest v1.6.1` dimmed, `router v1.6.1 · v1.6.2 available` in amber when an upgrade exists, and `router v1.6.1 · update installed, restart to update` in amber when the deployed `version.mjs` is newer than the running process. With automatic updates on, an upgrade notice ends with `· auto-update on`, `· auto-update running`, or `· auto-update failed`. It prints nothing when the router has never written a version cache.
 
 The render reads only local files, so it is safe on every status line refresh. When the cached check is older than ten minutes, it starts a detached `--refresh` child that performs one GitHub lookup and updates the cache; a stamp file limits the whole machine to one attempt every two minutes, so several Claude Code windows share a single refresh. The child is silent on failure. Mods such as the usage probe run in a sandbox without `fetch`, `process`, or filesystem access, which is why version visibility uses the status line rather than the turn footer.
 

@@ -4,6 +4,12 @@ All notable changes are documented here. The format follows Keep a Changelog and
 
 The version area with the problem analysis and measured evidence lives in [VERSIONS.md](VERSIONS.md).
 
+## [1.6.1] - 2026-11-26
+
+### Fixed
+
+- The status line no longer shows an idle timer. A freshly started terminal inherited the timestamp of the last untagged request in the log and could display `○ idle 28m` before it had done anything. Idle now renders as `○ idle`; an active request still shows its elapsed time.
+
 ## [1.6.0] - 2026-11-26
 
 Consolidated release of the four capabilities that landed on `main` today. Routing policy is unchanged; this release makes them compose correctly and fixes the per-terminal status view.

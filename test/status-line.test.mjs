@@ -30,7 +30,7 @@ test('the plain line names the model, shows the strip, and ends with the version
   assert.equal(line, '● Kimi 12s  DDK.K  router v1.3.0 · latest v1.3.0');
 });
 
-test('an idle line counts time since the last request', () => {
+test('an idle line has no timer', () => {
   const line = buildStatusLine({
     cells,
     inFlight: [],
@@ -39,7 +39,7 @@ test('an idle line counts time since the last request', () => {
     color: false,
     version,
   });
-  assert.equal(line, '○ idle 45s  DDK.K  router v1.3.0 · latest v1.3.0');
+  assert.equal(line, '○ idle  DDK.K  router v1.3.0 · latest v1.3.0');
 });
 
 test('an available update is amber and names the published release', () => {

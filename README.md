@@ -495,12 +495,12 @@ The same setting can point at `status-line.mjs` instead, which puts the model ac
 }
 ```
 
-It reads `session_id` from the JSON Claude Code passes on stdin and renders `● Kimi 12s  ███…  router v1.6.0 · latest v1.6.0`: the model serving the current request, an 80-second sample of DeepSeek (blue) and Kimi (amber) traffic, and the same release states listed below. The strip shows only this terminal's activity when the router log carries session tags (Claude Code requests always do; older logs render the global view). `CLAUDE_ROUTER_CELLS` and `CLAUDE_ROUTER_CELL_MS` widen the sample. `claude-router update` deploys the strip with the runtime (`src/status-line.mjs`, `src/activity.mjs`, and `src/session.mjs`).
+It reads `session_id` from the JSON Claude Code passes on stdin and renders `● Kimi 12s  ███…  router v1.6.1 · latest v1.6.1`: the model serving the current request, an 80-second sample of DeepSeek (blue) and Kimi (amber) traffic, and the same release states listed below. The strip shows only this terminal's activity when the router log carries session tags (Claude Code requests always do; older logs render the global view). `CLAUDE_ROUTER_CELLS` and `CLAUDE_ROUTER_CELL_MS` widen the sample. `claude-router update` deploys the strip with the runtime (`src/status-line.mjs`, `src/activity.mjs`, and `src/session.mjs`).
 
 The status line uses local files only on the render path and shows:
 
-- `router v1.6.0 · latest v1.6.0` dimmed when the running release is current.
-- An amber `router v1.6.0 · v1.6.1 available` when a newer release exists. With automatic updates on, it appends `· auto-update on`, `· auto-update running`, or `· auto-update failed`.
+- `router v1.6.1 · latest v1.6.1` dimmed when the running release is current.
+- An amber `router v1.6.1 · v1.6.2 available` when a newer release exists. With automatic updates on, it appends `· auto-update on`, `· auto-update running`, or `· auto-update failed`.
 - An amber `router v1.3.0 · update installed, restart to update` when the deployed `version.mjs` is newer than the running process.
 
 When the cached check is older than ten minutes, the helper starts a detached, throttled `--refresh` child; that child asks GitHub once and updates the cache, so a new release appears even if the router predates it and was never restarted. The child is silent on failure and several Claude Code windows share one refresh slot. No provider tokens are used, and there is no output when the router has never reported a version. Outside Claude Code, `claude-router version` prints the same release information and the automatic-update switch.
