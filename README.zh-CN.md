@@ -64,50 +64,64 @@ Claude Code 通常只为会话配置一个模型。但实际工作负载是混�
 flowchart LR
     CC[Claude Code<br/>终端 · 桌面端 · IDE]
     MOD[usage-probe 模组<br/>单轮与会话用量]
-    R[本地路由器<br/>127.0.0.1:17861]
-    DE{决策引擎}
-    K[Kimi]
-    DS[DeepSeek]
-    CL[DeepSeek 分类器]
+    R[本地路由器<br/>127.0.0.1:17861<br/>Messages API · 健康 · 版本 · 指标]
+    CFG[(config.json)]
+    DE{分类器 + 决策引擎}
+    K[Kimi 供应商]
+    DS[DeepSeek 供应商]
+    CL[DeepSeek<br/>语义分流]
     MOON[api.moonshot.cn]
     DEEP[api.deepseek.com]
     LOG[(router.log)]
+    TEL[(遥测 JSONL<br/>可选)]
     VC[(version-cache.json)]
+    ASTATE[(auto-update-state.json)]
     SL[status-line.mjs<br/>按终端过滤的活动条]
+    VREF[version-status.mjs 刷新<br/>节流子进程]
     VCHK[版本检查器]
     AU[auto-update.mjs]
     UP[router-update.mjs]
     GH[(GitHub)]
 
     CC -->|Anthropic Messages API| R
-    CC --- MOD
+    MOD -.->|渲染用量脚注| CC
+    CFG -->|加载 · SIGHUP 热加载| R
     R --> DE
-    DE -->|证据规则| K
     DE -->|默认| DS
-    DE -->|进展信号| K
+    DE -->|证据 · 进展| K
+    DE -->|恢复探针| DS
     DE -->|语义分流| CL
     CL --> DE
     K --> MOON
     DS --> DEEP
-    MOON --> R
-    DEEP --> R
+    CL --> DEEP
+    MOON -->|SSE / JSON| R
+    DEEP -->|SSE / JSON| R
     R -->|SSE / JSON| CC
-    R -->|route_decision · request_complete| LOG
+    R -->|route_decision · started · request_complete · 探针结果| LOG
+    R -.->|可选 JSONL 持久化| TEL
     LOG --> SL
+    CFG --> SL
     VC --> SL
+    ASTATE --> SL
     CC -->|stdin 中的 session_id| SL
     SL -->|原生状态栏| CC
-    R --> VCHK
-    VCHK -->|releases · tags| GH
+    SL -.->|缓存过期 · 分离进程| VREF
+    VREF -->|单次 GitHub 查询| GH
+    VREF --> VC
+    R -->|启动时 · /version · 每 30 分钟| VCHK
+    VCHK -->|releases · package.json · tags| GH
     VCHK --> VC
     R -->|周期触发| AU
+    CFG --> AU
+    VC --> AU
     AU -->|分离进程| UP
-    UP -->|拉取 · 测试 · 备份 · 重启| R
-    UP --> GH
-    AU --> VC
+    AU --> ASTATE
+    UP -->|拉取 main| GH
+    UP -->|测试 · 备份 · 部署 · 重启| R
 ```
 
-左侧是请求路径；状态栏和自动更新是旁路，只读取本地文件，且永远不会阻塞请求。
+左侧是请求路径。状态栏和自动更新是旁路：状态栏渲染只读本地文件，缓存过期刷新和每次安装都以分离子进程运行，因此都不会阻塞请求。健康检查、版本、指标和路由控制端点由同一个路由器进程提供，不在请求路径上。
 
 ### 核心组件
 
@@ -115,14 +129,19 @@ flowchart LR
 | --- | --- |
 | `src/router.mjs` | HTTP 服务、配置加载、信号处理、优雅退出 |
 | `src/handler.mjs` | 本地鉴权、端点分发、预览、上游转发 |
-| `src/classifier.mjs` | 显式覆盖、benchmark 优势规则、进展规则 |
+| `src/classifier.mjs` | 句首显式标记/别名、benchmark 优势规则、进展规则 |
 | `src/task-text.mjs` | 提取主任务文本、短追问继承 |
 | `src/progress.mjs` | 区分只读/修改工具，识别失败验证、重复错误等信号 |
-| `src/decision-engine.mjs` | 有界 Kimi 驻留、恢复探针、语义缓存 |
+| `src/decision-engine.mjs` | 有界 Kimi 驻留、恢复检查点/探针、语义缓存 |
 | `src/deescalation.mjs` | 干净恢复窗口与有上限的指数退避 |
 | `src/semantic.mjs` | 单次 DeepSeek 低成本分类，关闭 thinking |
-| `src/sanitize.mjs` | 跨供应商 thinking 内容清理 |
+| `src/sanitize.mjs` | 清理 thinking；为每个 DeepSeek assistant 回合补齐 thinking 块 |
 | `src/upstream.mjs` | SSE 流式透传、鉴权头、取消请求 |
+| `src/health.mjs` | 存活、就绪与需鉴权的深度健康检查 |
+| `src/telemetry.mjs` | 请求/token 指标、Prometheus 与 JSON 导出、可选有界 JSONL 持久化 |
+| `src/usage.mjs` | 从 JSON/SSE 中提取 token 用量，响应字节原样透传 |
+| `src/views.mjs` | 兼容用健康摘要与需鉴权的 `/v1/models` 响应 |
+| `src/http-utils.mjs` | 本地 token 鉴权、JSON/错误响应、128 MiB 请求体上限 |
 | `src/config-store.mjs` | 配置校验、原子热加载 |
 | `src/session.mjs` | 对 Claude Code 会话 id 做哈希，日志里只出现 16 位标记 |
 | `src/activity.mjs` | 把日志事件转换为按会话过滤的活动格与进行中请求 |
@@ -130,7 +149,11 @@ flowchart LR
 | `src/version.mjs` | 发布版本查询、共享版本缓存、更新状态 |
 | `src/auto-update.mjs` | 自动更新周期检查、分离式安装、失败退避 |
 | `scripts/router-update.mjs` | 可验证更新：检出、测试、备份、重启、健康检查、回滚 |
+| `scripts/router-control.mjs` | `state` 与 `deescalate` 控制端点客户端 |
+| `scripts/version-status.mjs` | 状态栏版本段；读本地缓存，并节流启动分离刷新 |
+| `scripts/healthcheck.mjs`、`scripts/verify-live.mjs`、`scripts/verify-deployment.mjs` | 安装后、真实供应商与部署验证 |
 | `scripts/lib/install-core.mjs` | 安全安装、备份、回滚、卸载 |
+| `scripts/lib/` | 安装、诊断、Docker、设置、路径与真实请求客户端等辅助模块 |
 | `mods/usage-probe/` | Claude Code 终端模组：单轮/会话用量脚注、`/router-usage` |
 | `bin/claude-router.mjs` | 用户命令行入口 |
 
@@ -138,19 +161,19 @@ flowchart LR
 
 1. Claude Code 向 `http://127.0.0.1:17861` 发送 `POST /v1/messages` 或 `count_tokens`。
 2. 路由器验证本地 Bearer token。
-3. 从最近一条实质性用户消息提取任务文本；“continue”“继续”等短追问继承之前的任务。
+3. 从最近一条实质性用户消息提取任务文本；“continue”“继续”等短追问继承之前的任务。会话键由用户 id、会话标记和首个任务共同哈希，因此不同终端的相同首句不会共享 Kimi 驻留状态。
 4. 决策引擎依次评估：
-   - 模型名或提示词中的显式指定；
+   - 模型别名、句首 `[kimi]`/`[deepseek]` 标记或句首 `force` 指令；
    - Kimi 明确优势任务规则；
    - 基于进展的升级信号；
-   - 工具循环内保持 Kimi 粘性，并在检查点（新用户消息或长回合中途复查）执行 DeepSeek 恢复探针；
+   - 工具循环内保持 Kimi 粘性，并在检查点（新用户消息、请求/工具/时间窗口或手动请求）执行 DeepSeek 恢复探针；
    - 可选语义分流；
    - 以上均不满足时使用 DeepSeek。
 5. 将 `auto` 替换为所选供应商的真实模型名。
-6. 如果发生跨供应商切换，移除不兼容的 thinking 内容块。
+6. 按目标供应商清理 thinking 内容：移除 redacted 块和跨供应商签名，并为每个 DeepSeek assistant 回合补齐 thinking 块。
 7. 使用对应供应商的 API key 转发请求。
 8. 响应状态码、Content-Type、SSE 数据块和重试头原样传回。
-9. 结构化日志只记录供应商、原因、来源、是否流式、进展统计、会话/任务键、16 位会话标记、能力/媒体类型以及降档结果；不记录提示词、会话 UUID 和 API key。
+9. 结构化日志记录解析后的供应商与模型、客户端请求的模型名、原因、来源、是否流式、进展统计、会话/任务键、16 位会话标记、能力/媒体类型、降档检查点与结果以及 Kimi 驻留计数；探针尝试另写 `deescalation_probe_outcome`。不记录提示词、会话 UUID 和 API key。
 
 ### 路由原则
 

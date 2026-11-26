@@ -64,51 +64,68 @@ This project puts a small HTTP proxy on `127.0.0.1` between Claude Code and the 
 flowchart LR
     CC[Claude Code<br/>terminal · desktop · IDE]
     MOD[usage-probe mod<br/>turn and session usage]
-    R[Local router<br/>127.0.0.1:17861]
-    DE{Decision engine}
-    K[Kimi]
-    DS[DeepSeek]
-    CL[DeepSeek classifier]
+    R[Local router<br/>127.0.0.1:17861<br/>Messages API · health · version · metrics]
+    CFG[(config.json)]
+    DE{Classifier + decision engine}
+    K[Kimi provider]
+    DS[DeepSeek provider]
+    CL[DeepSeek<br/>semantic triage]
     MOON[api.moonshot.cn]
     DEEP[api.deepseek.com]
     LOG[(router.log)]
+    TEL[(telemetry JSONL<br/>optional)]
     VC[(version-cache.json)]
+    ASTATE[(auto-update-state.json)]
     SL[status-line.mjs<br/>per-terminal strip]
+    VREF[version-status.mjs refresh<br/>throttled child]
     VCHK[version checker]
     AU[auto-update.mjs]
     UP[router-update.mjs]
     GH[(GitHub)]
 
     CC -->|Anthropic Messages API| R
-    CC --- MOD
+    MOD -.->|renders usage footer| CC
+    CFG -->|load · SIGHUP reload| R
     R --> DE
-    DE -->|evidence rules| K
     DE -->|default| DS
-    DE -->|progress signals| K
+    DE -->|evidence · progress| K
+    DE -->|recovery probe| DS
     DE -->|semantic triage| CL
     CL --> DE
     K --> MOON
     DS --> DEEP
-    MOON --> R
-    DEEP --> R
+    CL --> DEEP
+    MOON -->|SSE / JSON| R
+    DEEP -->|SSE / JSON| R
     R -->|SSE / JSON| CC
-    R -->|route_decision · request_complete| LOG
+    R -->|route_decision · started · request_complete · probe outcome| LOG
+    R -.->|optional JSONL persistence| TEL
     LOG --> SL
+    CFG --> SL
     VC --> SL
+    ASTATE --> SL
     CC -->|session_id on stdin| SL
     SL -->|native status line| CC
-    R --> VCHK
-    VCHK -->|releases · tags| GH
+    SL -.->|stale cache · detached| VREF
+    VREF -->|one GitHub read| GH
+    VREF --> VC
+    R -->|startup · /version · every 30 min| VCHK
+    VCHK -->|releases · package.json · tags| GH
     VCHK --> VC
     R -->|periodic tick| AU
+    CFG --> AU
+    VC --> AU
     AU -->|spawns detached| UP
-    UP -->|fetch · test · backup · restart| R
-    UP --> GH
-    AU --> VC
+    AU --> ASTATE
+    UP -->|fetch main| GH
+    UP -->|tests · backup · deploy · restart| R
 ```
 
-The request path is the left half; the status line and the updater are side
-channels that only read local files and can never block a request.
+The request path is the left half. The status line and updater are side
+channels: the status-line render reads local files only, while its stale-cache
+refresh and every install run as detached children, so neither blocks a
+request. Health, version, metrics, and routing-control endpoints are served by
+the same router process and are not on the request path.
 
 ### Components
 
@@ -116,14 +133,19 @@ channels that only read local files and can never block a request.
 | --- | --- |
 | `src/router.mjs` | HTTP server, config loading, signals, graceful shutdown |
 | `src/handler.mjs` | Auth, endpoint routing, preview endpoint, provider forwarding |
-| `src/classifier.mjs` | Explicit overrides, benchmark-advantage rules, progress rules |
+| `src/classifier.mjs` | Explicit leading markers/aliases, benchmark-advantage rules, progress rules |
 | `src/task-text.mjs` | Task extraction and follow-up inheritance |
 | `src/progress.mjs` | Read-only vs mutating tool analysis, failed verification detection, repeated errors |
-| `src/decision-engine.mjs` | Bounded Kimi residency, recovery probes, semantic-triage cache |
+| `src/decision-engine.mjs` | Bounded Kimi residency, recovery checkpoints/probes, semantic-triage cache |
 | `src/deescalation.mjs` | Clean-window gates and capped exponential probe backoff |
 | `src/semantic.mjs` | One low-cost DeepSeek classification call with thinking disabled |
-| `src/sanitize.mjs` | Cross-provider thinking/redacted-thinking cleanup |
+| `src/sanitize.mjs` | Thinking cleanup; guarantees a DeepSeek thinking block on every assistant turn |
 | `src/upstream.mjs` | Streaming passthrough, auth headers, cancellation |
+| `src/health.mjs` | Liveness, readiness, and authenticated deep health checks |
+| `src/telemetry.mjs` | Request/token metrics, Prometheus and JSON export, optional bounded JSONL persistence |
+| `src/usage.mjs` | JSON/SSE token-usage tap that forwards response bytes unchanged |
+| `src/views.mjs` | Legacy health summary and authenticated `/v1/models` payloads |
+| `src/http-utils.mjs` | Local token auth, JSON/error responses, 128 MiB bounded body parsing |
 | `src/config-store.mjs` | Validation and atomic SIGHUP reload |
 | `src/session.mjs` | Hashes the Claude Code session id; only the 16-hex tag is logged |
 | `src/activity.mjs` | Turns log events into per-session activity cells and in-flight requests |
@@ -131,7 +153,11 @@ channels that only read local files and can never block a request.
 | `src/version.mjs` | Release lookup, shared version cache, update state |
 | `src/auto-update.mjs` | Periodic auto-update tick, detached install, failure backoff |
 | `scripts/router-update.mjs` | Verified update: checkout, tests, backup, restart, health check, rollback |
+| `scripts/router-control.mjs` | `state` and `deescalate` client for the authenticated control endpoints |
+| `scripts/version-status.mjs` | Status-line version segment; local cache read plus throttled detached refresh |
+| `scripts/healthcheck.mjs`, `scripts/verify-live.mjs`, `scripts/verify-deployment.mjs` | Post-install, live-provider, and deployment verification |
 | `scripts/lib/install-core.mjs` | Safe installer, dry-run, backup, rollback, Docker operations |
+| `scripts/lib/` | Doctor, Docker, settings, path, and live-client helpers |
 | `mods/usage-probe/` | Claude Code terminal mod: per-turn and session usage footer, `/router-usage` |
 | `bin/claude-router.mjs` | User-facing command line |
 
@@ -139,19 +165,19 @@ channels that only read local files and can never block a request.
 
 1. Claude Code sends `POST /v1/messages` (or `count_tokens`) to `http://127.0.0.1:17861`.
 2. The router authenticates the local bearer token.
-3. The task text is extracted from the latest substantive user message. Short follow-ups such as “continue” inherit the previous task.
+3. The task text is extracted from the latest substantive user message. Short follow-ups such as “continue” inherit the previous task. The conversation key hashes the user id, the session tag, and the first task, so identical first messages in different terminals do not share Kimi residency.
 4. The decision engine evaluates, in order:
-   - explicit model/prompt override,
+   - a model alias, a leading `[kimi]`/`[deepseek]` marker, or a leading `force` command,
    - evidence-based Kimi advantage rules,
    - progress-aware escalation,
    - sticky Kimi inside a tool-use loop, with checkpoint-based DeepSeek recovery probes,
    - optional semantic triage,
    - otherwise DeepSeek.
 5. The selected provider's model name replaces `auto`.
-6. Incompatible thinking blocks are removed if providers switch.
+6. Thinking artifacts are made safe for the target provider: redacted blocks and cross-provider signatures are removed, and every DeepSeek assistant turn is guaranteed a thinking block.
 7. The request is forwarded upstream with the provider's key.
 8. Response status, content type, SSE chunks, and retry headers are passed back unchanged.
-9. A structured log line records provider, reason, source, stream flag, progress stats, conversation/task keys, the 16-hex session tag, capability/media kinds, the de-escalation checkpoint and outcome, and Kimi residency counters. Prompts, session UUIDs, and API keys are not logged.
+9. A structured log line records the resolved provider and model, the client's requested model, reason, source, stream flag, progress stats, conversation/task keys, the 16-hex session tag, capability/media kinds, the de-escalation checkpoint and outcome, and Kimi residency counters; probe attempts also write `deescalation_probe_outcome`. Prompts, session UUIDs, and API keys are not logged.
 
 ### Routing policy
 
