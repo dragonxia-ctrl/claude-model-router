@@ -125,10 +125,14 @@ It prints `router v1.2.0 · latest v1.2.0` dimmed, or `router v1.2.0 · v1.3.0 a
 `mods/usage-probe` is a Claude Code terminal mod. It renders real per-model token consumption and model-request time immediately above the native `TurnDuration` footer (for example, `Churned for 22s · done ...`). It also provides `/router-usage` for a detailed breakdown.
 
 ```text
-Usage · DeepSeek 6.5k tok · 93% tok · 0.0s · 0% time
-        Kimi     500 tok  · 7% tok  · 0.0s · 0% time
+Usage · DeepSeek 0 tok   · 0% tok   · 0.0s  · 0% time
+        Kimi     500 tok · 100% tok · 2.1s  · 100% time
+Session · DeepSeek 6.5k tok · 93% tok · 18.4s · 71% time
+          Kimi     500 tok  · 7% tok  · 7.4s  · 29% time
 Churned for 22s · done Tuesday 22:53
 ```
+
+The `Usage` rows are the last completed turn alone; the `Session` rows, shown from the second completed turn on, sum the same figures over every turn of the session. A context compaction or a continuation starts a new turn, so the turn rows then cover only the latest segment while the session rows keep the earlier ones. `/router-usage` prints both breakdowns. A cleared or resumed session, or reloading the mod mid-session, starts the totals over.
 
 The displayed token total is the sum of input, output, cache-read, and cache-creation tokens. It is an accounted token-volume ratio, **not a price or billed-cost ratio**. Model time is measured around each `turn.step`; turn wall time also includes tools and other non-model work. Both router models are shown, including an explicit zero for an unused model. Missing usage is labeled `usage unavailable`/`partial usage`, and interrupted turns are labeled partial rather than silently treated as complete. Subagent traffic is excluded from the main-conversation summary.
 
