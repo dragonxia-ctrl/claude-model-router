@@ -12,13 +12,15 @@ The policy was derived from public model comparisons consulted in November 2026.
 
 | Signal in task | Rationale | Result |
 | --- | --- | --- |
-| Video input/understanding | Kimi capability advantage | Kimi |
+| Video media block (`type: video` or `source.media_type: video/*`) | Only Kimi can consume video | Kimi (hard, never de-escalates) |
 | Long-horizon autonomous project/application/system delivery | Terminal-Bench-style advantage | Kimi |
 | Deep research, multi-step research, literature review, or source/evidence cross-verification | HLE-style research advantage | Kimi |
 | Olympiad/frontier math, theorem proving, formal proofs | FrontierMath-style advantage | Kimi |
-| Complex visual, chart, or diagram reasoning | ZeroBench-style advantage | Kimi |
+| Complex visual, chart, or diagram reasoning | ZeroBench-style advantage | Kimi (ordinary evidence; a clean window can probe back) |
 | Ordinary coding, architecture, refactoring, debugging | DeepSeek comparable or better in consulted coding comparisons | DeepSeek |
 | Kaggle, data science, finance, legal, general questions | No clear Kimi advantage established by the policy | DeepSeek |
+
+Text heuristics and semantic triage apply only to **interactive streaming requests** (`stream: true`). Requests that omit `stream` or set it to `false` are auxiliary calls (classifiers, summaries) whose text can contain the same words without being that kind of task; they keep the default provider. Only real video media and explicit model selection can route them elsewhere. A text mention of video (`.mp4`, "video understanding") is not a capability requirement, and an image block alone never hard-locks.
 
 ### Deliberate near-miss handling
 
@@ -80,7 +82,7 @@ A checkpoint is either a new human text message or a **mid-turn review**: while 
 All applicable conditions must hold:
 
 - de-escalation is enabled, DeepSeek is configured, and the selection is not an explicit override;
-- the task has no hard Kimi-only capability requirement (currently video or complex visual reasoning);
+- the task has no hard Kimi-only capability requirement (currently an actual video media block);
 - the configured number of actual Kimi requests has completed;
 - failed-probe attempts remain below `maxAttempts`;
 - a checkpoint occurred: a new human message, or `windowToolCalls` new tool calls since the last review;

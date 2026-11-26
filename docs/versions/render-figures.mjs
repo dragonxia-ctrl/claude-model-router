@@ -1,4 +1,4 @@
-// Render the version-report figures from data/v1-v2.json.
+// Render the version-report figures from data/v1-v2.json and data/v2-v3.json.
 // Static SVG, no dependencies. Run: node docs/versions/render-figures.mjs
 import fs from 'node:fs';
 import path from 'node:path';
@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const data = JSON.parse(fs.readFileSync(path.join(here, 'data/v1-v2.json'), 'utf8'));
+const v3 = JSON.parse(fs.readFileSync(path.join(here, 'data/v2-v3.json'), 'utf8'));
 const outDir = path.join(here, 'assets');
 fs.mkdirSync(outDir, { recursive: true });
 
@@ -231,6 +232,76 @@ function figureCommands() {
   return parts.join('\n');
 }
 
+// ---------------------------------------------------------------- Figure 5
+// v2 vs v3: Kimi share of the whole 2026-11-25 session window (replay).
+function figureV3Share() {
+  const W = 880, H = 360;
+  const groups = [
+    { label: 'Share of requests', values: [v3.totals.v2.requestShare, v3.totals.v3.requestShare] },
+    { label: 'Share of tokens', values: [v3.totals.v2.tokenShare, v3.totals.v3.tokenShare] },
+  ];
+  const series = [
+    { name: 'v2 (1.2.0)', color: C.kimi },
+    { name: 'v3 (1.3.0)', color: C.deepseek },
+  ];
+  const x0 = 76, x1 = 828, y0 = 272, yTop = 110, yMax = 100;
+  const groupGap = 130, barW = 52, barGap = 2;
+  const groupW = series.length * barW + barGap;
+  const totalW = groups.length * groupW + groupGap;
+  const startX = x0 + ((x1 - x0) - totalW) / 2;
+  const parts = [frame(W, H, 'Kimi share of the session window, v2 vs v3',
+    'Grouped columns: share of all requests and of all tokens served by Kimi in the same 2026-11-25 session window.')];
+  parts.push(`<text class="t" x="32" y="32">Kimi share of the whole session window</text>`);
+  parts.push(`<text class="s" x="32" y="52">${v3.totals.requests} logged requests · ${(v3.totals.tokens / 1e6).toFixed(1)}M tokens · replayed through v2 and v3</text>`);
+  parts.push(legend(76, series.map(s => [s.color, s.name])));
+  parts.push(grid(x0, x1, y0, yTop, [0, 25, 50, 75, 100], yMax, value => `${value}%`));
+  groups.forEach((group, gi) => {
+    const gx = startX + gi * (groupW + groupGap);
+    series.forEach((s, si) => {
+      const value = group.values[si];
+      const h = (value / yMax) * (y0 - yTop);
+      const x = gx + si * (barW + barGap);
+      parts.push(`<path d="${barPath(x, y0 - h, barW, h)}" fill="${s.color}"/>`);
+      parts.push(`<text class="v" x="${x + barW / 2}" y="${y0 - h - 8}" text-anchor="middle">${value}%</text>`);
+    });
+    parts.push(`<text class="a" x="${gx + groupW / 2}" y="${y0 + 22}" text-anchor="middle">${esc(group.label)}</text>`);
+  });
+  parts.push(`<text class="a" x="32" y="322">Only non-streaming auxiliary calls and text-only “video” mentions change provider.</text>`);
+  parts.push('</svg>');
+  return parts.join('\n');
+}
+
+// ---------------------------------------------------------------- Figure 6
+// Which channels carried the Kimi tokens, before and after v3.
+function figureV3Channels() {
+  const W = 880;
+  const rows = v3.channels.filter(c => c.requests >= 5).slice(0, 7);
+  const H = 130 + rows.length * 40 + 30;
+  const maxTokens = Math.max(...rows.map(c => c.kimiTokens));
+  const x0 = 168, x1 = 812, yStart = 104, band = 40, barH = 13;
+  const xOf = value => x0 + (value / Math.max(1, maxTokens)) * (x1 - x0);
+  const parts = [frame(W, H, 'Kimi tokens by conversation channel',
+    'Paired horizontal bars: Kimi-served tokens per conversation channel under v2 and v3, same session window.')];
+  parts.push(`<text class="t" x="32" y="32">Where the Kimi tokens actually went</text>`);
+  parts.push(`<text class="s" x="32" y="52">Kimi-served tokens per channel · same window · v2 above, v3 below each pair</text>`);
+  parts.push(legend(78, [[C.kimi, 'v2'], [C.deepseek, 'v3']]));
+  rows.forEach((row, i) => {
+    const y = yStart + i * band;
+    const label = `${row.key.slice(0, 10)}${row.interactive ? '' : ' · non-stream'}`;
+    parts.push(`<text class="a" x="${x0 - 12}" y="${y + 11}" text-anchor="end">${esc(label)}</text>`);
+    for (const [offset, value, color] of [[0, row.kimiTokens, C.kimi], [16, row.v3KimiTokens, C.deepseek]]) {
+      const w = Math.max(0, xOf(value) - x0);
+      if (w > 0) parts.push(`<path d="${hbarPath(x0, y + offset, w, barH)}" fill="${color}"/>`);
+      const text = `${(value / 1e6).toFixed(1)}M`;
+      if (w > 46) parts.push(`<text class="v" x="${x0 + 6}" y="${y + offset + 10}">${text}</text>`);
+      else parts.push(`<text class="v" x="${x0 + w + 6}" y="${y + offset + 10}">${text}</text>`);
+    }
+  });
+  parts.push(`<text class="a" x="32" y="${H - 18}">“non-stream” channels are auxiliary model calls; v3 keeps them on DeepSeek.</text>`);
+  parts.push('</svg>');
+  return parts.join('\n');
+}
+
 // attach simple accessor onto the data object
 data.at = limit => data.after.find(a => a.limit === limit);
 
@@ -239,6 +310,8 @@ for (const [name, fn] of Object.entries({
   'fig2-mutating-counter': figureCounter,
   'fig3-provider-timeline': figureTimeline,
   'fig4-command-kind': figureCommands,
+  'fig5-kimi-share-v3': figureV3Share,
+  'fig6-kimi-channels-v3': figureV3Channels,
 })) {
   fs.writeFileSync(path.join(outDir, `${name}.svg`), fn() + '\n');
   console.log('wrote', path.join('docs/versions/assets', `${name}.svg`));

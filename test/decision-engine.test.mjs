@@ -9,7 +9,7 @@ const config = enabled => ({
   providers: { deepseek: { baseUrl: 'https://ds.invalid', model: 'ds', apiKey: 'x' }, kimi: { baseUrl: 'https://k.invalid', model: 'k', apiKey: 'y' } },
 });
 const task = '分析这个数据管道中偶发的不一致，设计可复现的实验并验证最小修改方案。';
-const body = (text = task) => ({ model: 'auto', messages: [{ role: 'user', content: text }] });
+const body = (text = task) => ({ model: 'auto', stream: true, messages: [{ role: 'user', content: text }] });
 
 test('semantic triage is cached and the same task stays on Kimi', async () => {
   let calls = 0;

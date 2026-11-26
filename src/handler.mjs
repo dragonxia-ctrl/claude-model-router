@@ -121,6 +121,9 @@ export function createHandler(configSource, options = {}) {
         model: provider.model, reason: decision.reason, source: decision.source,
         stream: Boolean(body.stream), stats: decision.stats || null,
         conversationKey: decision.conversationKey, taskKey: decision.taskKey,
+        capabilityKinds: decision.capabilityKinds || null,
+        hardCapability: decision.hardCapability ?? null,
+        media: decision.media || null,
         deescalationOutcome: transition?.outcome || null,
       }));
       await forward({

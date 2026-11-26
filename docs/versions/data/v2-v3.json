@@ -1,0 +1,311 @@
+{
+  "generatedAt": "2026-11-26T02:35:44.049Z",
+  "experiment": "v2 vs v3 routing on the live 2026-11-25 session window (router.log replay, no request bodies)",
+  "method": "Each logged route_decision is re-classified with the v3 rule: non-streaming requests keep the default provider (explicit selection and real media still win); streaming decisions are unchanged. Token totals come from request_complete usage (input + output + cache reads).",
+  "window": {
+    "from": "2026-11-25T13:02:29.763Z",
+    "to": "2026-11-25T16:33:56.287Z"
+  },
+  "totals": {
+    "requests": 772,
+    "tokens": 69472112,
+    "v2": {
+      "kimiRequests": 473,
+      "kimiTokens": 36423968,
+      "requestShare": 61.3,
+      "tokenShare": 52.4
+    },
+    "v3": {
+      "kimiRequests": 164,
+      "kimiTokens": 17749958,
+      "requestShare": 21.2,
+      "tokenShare": 25.5
+    }
+  },
+  "channels": [
+    {
+      "key": "ea4ff0cb70",
+      "requests": 218,
+      "kimiRequests": 110,
+      "tokens": 29011564,
+      "kimiTokens": 13728321,
+      "v3KimiRequests": 110,
+      "v3KimiTokens": 13728321,
+      "interactive": true,
+      "sources": {
+        "semantic": 58,
+        "evidence": 10,
+        "sticky": 100,
+        "default": 49,
+        "deescalation_probe": 1
+      },
+      "firstAt": "2026-11-25T13:34:13.003Z",
+      "lastAt": "2026-11-25T15:56:00.583Z"
+    },
+    {
+      "key": "9e6f5dfdda",
+      "requests": 245,
+      "kimiRequests": 245,
+      "tokens": 14751296,
+      "kimiTokens": 14751296,
+      "v3KimiRequests": 0,
+      "v3KimiTokens": 0,
+      "interactive": false,
+      "sources": {
+        "evidence": 237,
+        "sticky": 8
+      },
+      "firstAt": "2026-11-25T13:34:14.814Z",
+      "lastAt": "2026-11-25T15:41:00.315Z"
+    },
+    {
+      "key": "c8344dfc66",
+      "requests": 73,
+      "kimiRequests": 14,
+      "tokens": 13066130,
+      "kimiTokens": 2506463,
+      "v3KimiRequests": 14,
+      "v3KimiTokens": 2506463,
+      "interactive": true,
+      "sources": {
+        "default": 8,
+        "semantic": 50,
+        "evidence": 1,
+        "sticky": 13,
+        "deescalation_probe": 1
+      },
+      "firstAt": "2026-11-25T13:02:29.763Z",
+      "lastAt": "2026-11-25T13:33:35.771Z"
+    },
+    {
+      "key": "31eaea2910",
+      "requests": 60,
+      "kimiRequests": 60,
+      "tokens": 3922714,
+      "kimiTokens": 3922714,
+      "v3KimiRequests": 0,
+      "v3KimiTokens": 0,
+      "interactive": false,
+      "sources": {
+        "evidence": 60
+      },
+      "firstAt": "2026-11-25T13:02:34.589Z",
+      "lastAt": "2026-11-25T13:33:28.449Z"
+    },
+    {
+      "key": "08e92d4698",
+      "requests": 66,
+      "kimiRequests": 16,
+      "tokens": 2979978,
+      "kimiTokens": 780759,
+      "v3KimiRequests": 16,
+      "v3KimiTokens": 780759,
+      "interactive": true,
+      "sources": {
+        "semantic": 19,
+        "default": 31,
+        "evidence": 2,
+        "sticky": 14
+      },
+      "firstAt": "2026-11-25T15:56:23.800Z",
+      "lastAt": "2026-11-25T16:33:56.287Z"
+    },
+    {
+      "key": "24d24cf369",
+      "requests": 51,
+      "kimiRequests": 0,
+      "tokens": 1988813,
+      "kimiTokens": 0,
+      "v3KimiRequests": 0,
+      "v3KimiTokens": 0,
+      "interactive": false,
+      "sources": {
+        "semantic": 51
+      },
+      "firstAt": "2026-11-25T15:56:26.467Z",
+      "lastAt": "2026-11-25T16:29:53.757Z"
+    },
+    {
+      "key": "d82bf89caa",
+      "requests": 23,
+      "kimiRequests": 0,
+      "tokens": 1643781,
+      "kimiTokens": 0,
+      "v3KimiRequests": 0,
+      "v3KimiTokens": 0,
+      "interactive": true,
+      "sources": {
+        "default": 6,
+        "semantic": 17
+      },
+      "firstAt": "2026-11-25T15:21:51.524Z",
+      "lastAt": "2026-11-25T15:57:05.293Z"
+    },
+    {
+      "key": "a7d1b5a0c9",
+      "requests": 6,
+      "kimiRequests": 0,
+      "tokens": 1373421,
+      "kimiTokens": 0,
+      "v3KimiRequests": 0,
+      "v3KimiTokens": 0,
+      "interactive": true,
+      "sources": {
+        "default": 4,
+        "semantic": 2
+      },
+      "firstAt": "2026-11-25T15:04:12.764Z",
+      "lastAt": "2026-11-25T15:21:16.210Z"
+    },
+    {
+      "key": "e6ba49fe8c",
+      "requests": 21,
+      "kimiRequests": 21,
+      "tokens": 734415,
+      "kimiTokens": 734415,
+      "v3KimiRequests": 21,
+      "v3KimiTokens": 734415,
+      "interactive": false,
+      "sources": {
+        "explicit": 21
+      },
+      "firstAt": "2026-11-25T15:48:01.677Z",
+      "lastAt": "2026-11-25T15:53:47.116Z"
+    },
+    {
+      "key": "42cc0a4d39",
+      "requests": 1,
+      "kimiRequests": 1,
+      "tokens": 0,
+      "kimiTokens": 0,
+      "v3KimiRequests": 1,
+      "v3KimiTokens": 0,
+      "interactive": false,
+      "sources": {
+        "explicit": 1
+      },
+      "firstAt": "2026-11-25T13:34:11.673Z",
+      "lastAt": "2026-11-25T13:34:11.673Z"
+    },
+    {
+      "key": "c37b2110dd",
+      "requests": 1,
+      "kimiRequests": 1,
+      "tokens": 0,
+      "kimiTokens": 0,
+      "v3KimiRequests": 1,
+      "v3KimiTokens": 0,
+      "interactive": false,
+      "sources": {
+        "explicit": 1
+      },
+      "firstAt": "2026-11-25T13:34:11.676Z",
+      "lastAt": "2026-11-25T13:34:11.676Z"
+    },
+    {
+      "key": "c926c8b6f9",
+      "requests": 1,
+      "kimiRequests": 1,
+      "tokens": 0,
+      "kimiTokens": 0,
+      "v3KimiRequests": 1,
+      "v3KimiTokens": 0,
+      "interactive": false,
+      "sources": {
+        "explicit": 1
+      },
+      "firstAt": "2026-11-25T13:34:11.678Z",
+      "lastAt": "2026-11-25T13:34:11.678Z"
+    },
+    {
+      "key": "be71a2f64b",
+      "requests": 1,
+      "kimiRequests": 1,
+      "tokens": 0,
+      "kimiTokens": 0,
+      "v3KimiRequests": 0,
+      "v3KimiTokens": 0,
+      "interactive": false,
+      "sources": {
+        "evidence": 1
+      },
+      "firstAt": "2026-11-25T13:34:11.680Z",
+      "lastAt": "2026-11-25T13:34:11.680Z"
+    },
+    {
+      "key": "a1b02fecb6",
+      "requests": 1,
+      "kimiRequests": 0,
+      "tokens": 0,
+      "kimiTokens": 0,
+      "v3KimiRequests": 0,
+      "v3KimiTokens": 0,
+      "interactive": false,
+      "sources": {
+        "default": 1
+      },
+      "firstAt": "2026-11-25T15:21:49.017Z",
+      "lastAt": "2026-11-25T15:21:49.017Z"
+    },
+    {
+      "key": "541ab047ae",
+      "requests": 1,
+      "kimiRequests": 1,
+      "tokens": 0,
+      "kimiTokens": 0,
+      "v3KimiRequests": 0,
+      "v3KimiTokens": 0,
+      "interactive": false,
+      "sources": {
+        "evidence": 1
+      },
+      "firstAt": "2026-11-25T15:21:49.019Z",
+      "lastAt": "2026-11-25T15:21:49.019Z"
+    },
+    {
+      "key": "a8cb3cfece",
+      "requests": 1,
+      "kimiRequests": 1,
+      "tokens": 0,
+      "kimiTokens": 0,
+      "v3KimiRequests": 0,
+      "v3KimiTokens": 0,
+      "interactive": false,
+      "sources": {
+        "evidence": 1
+      },
+      "firstAt": "2026-11-25T15:21:49.021Z",
+      "lastAt": "2026-11-25T15:21:49.021Z"
+    },
+    {
+      "key": "129fbfff70",
+      "requests": 1,
+      "kimiRequests": 1,
+      "tokens": 0,
+      "kimiTokens": 0,
+      "v3KimiRequests": 0,
+      "v3KimiTokens": 0,
+      "interactive": false,
+      "sources": {
+        "evidence": 1
+      },
+      "firstAt": "2026-11-25T15:56:22.632Z",
+      "lastAt": "2026-11-25T15:56:22.632Z"
+    },
+    {
+      "key": "537e60404d",
+      "requests": 1,
+      "kimiRequests": 0,
+      "tokens": 0,
+      "kimiTokens": 0,
+      "v3KimiRequests": 0,
+      "v3KimiTokens": 0,
+      "interactive": false,
+      "sources": {
+        "default": 1
+      },
+      "firstAt": "2026-11-25T15:56:22.636Z",
+      "lastAt": "2026-11-25T15:56:22.636Z"
+    }
+  ]
+}

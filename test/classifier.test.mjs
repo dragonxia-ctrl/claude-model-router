@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { classifyRequest } from '../src/classifier.mjs';
 import { sanitizeForProvider } from '../src/sanitize.mjs';
 
-const request = (text, extra = {}) => ({ model: 'auto', messages: [{ role: 'user', content: text }], ...extra });
+const request = (text, extra = {}) => ({ model: 'auto', stream: true, messages: [{ role: 'user', content: text }], ...extra });
 const tools = (count, mutating = false) => {
   const messages = [{ role: 'user', content: '修改一个函数' }];
   for (let i = 0; i < count; i++) {
@@ -21,9 +21,54 @@ test('routine and complex-sounding coding stay on DeepSeek', () => {
 });
 
 test('only demonstrated Kimi advantage categories switch', () => {
-  for (const text of ['自主完成一个端到端完整项目', '从零构建一个端到端应用并交付', '做深度研究并交叉验证来源', '核对多个来源，交叉验证关键数据后撰写调查报告', '完成竞赛数学证明', '分析这个复杂图表的视觉推理', '分析这个 mp4 视频']) {
+  for (const text of ['自主完成一个端到端完整项目', '从零构建一个端到端应用并交付', '做深度研究并交叉验证来源', '核对多个来源，交叉验证关键数据后撰写调查报告', '完成竞赛数学证明', '分析这个复杂图表的视觉推理']) {
     assert.equal(classifyRequest(request(text)).provider, 'kimi', text);
   }
+});
+
+test('text mentions of video are not a capability requirement', () => {
+  for (const text of ['分析这个 mp4 视频', 'how do I analyze video understanding benchmarks', '整理 .mov 文件名列表']) {
+    const decision = classifyRequest(request(text));
+    assert.equal(decision.provider, 'deepseek', text);
+    assert.equal(decision.hardCapability, false, text);
+    assert.deepEqual(decision.media, { video: false, image: false });
+  }
+});
+
+test('a video block is a hard capability even without matching words', () => {
+  const body = request('处理这个附件', {
+    messages: [{ role: 'user', content: [
+      { type: 'text', text: '处理这个附件' },
+      { type: 'video', source: { type: 'base64', media_type: 'video/mp4', data: 'AAAA' } },
+    ] }],
+  });
+  const decision = classifyRequest(body);
+  assert.equal(decision.provider, 'kimi');
+  assert.equal(decision.hardCapability, true);
+  assert.deepEqual(decision.media, { video: true, image: false });
+});
+
+test('an image block alone does not hard-lock routing', () => {
+  const body = request('这个截图里的报错怎么修', {
+    messages: [{ role: 'user', content: [
+      { type: 'text', text: '这个截图里的报错怎么修' },
+      { type: 'image', source: { type: 'base64', media_type: 'image/png', data: 'AAAA' } },
+    ] }],
+  });
+  const decision = classifyRequest(body);
+  assert.equal(decision.provider, 'deepseek');
+  assert.equal(decision.hardCapability, false);
+  assert.deepEqual(decision.media, { video: false, image: true });
+});
+
+test('non-streaming auxiliary calls keep the default provider', () => {
+  for (const stream of [false, undefined]) {
+    const auxiliary = classifyRequest(request('自主完成一个端到端完整项目', { stream }));
+    assert.equal(auxiliary.provider, 'deepseek', String(stream));
+    assert.equal(auxiliary.interactive, false, String(stream));
+    assert.equal(auxiliary.triageCandidate, false, String(stream));
+  }
+  assert.equal(classifyRequest(request('自主完成一个端到端完整项目', { stream: true })).provider, 'kimi');
 });
 
 test('read-only work never escalates; long mutation sequences do', () => {
@@ -33,7 +78,7 @@ test('read-only work never escalates; long mutation sequences do', () => {
 });
 
 test('follow-up inherits the current task', () => {
-  const body = { model: 'auto', messages: [
+  const body = { model: 'auto', stream: true, messages: [
     { role: 'user', content: '自主完成一个端到端完整项目' },
     { role: 'assistant', content: '好的' },
     { role: 'user', content: '继续' },
@@ -42,7 +87,7 @@ test('follow-up inherits the current task', () => {
 });
 
 test('repeated follow-ups retain the last substantive task', () => {
-  const body = { model: 'auto', messages: [
+  const body = { model: 'auto', stream: true, messages: [
     { role: 'user', content: '自主完成一个端到端完整项目' },
     { role: 'assistant', content: '第一阶段完成' },
     { role: 'user', content: '继续' },

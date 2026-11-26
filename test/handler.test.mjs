@@ -57,8 +57,9 @@ test('handler routes, authenticates, rewrites model and preserves SSE', async t 
   assert.equal(response.status, 200);
   assert.equal((await response.json()).provider, 'deepseek');
 
-  response = await post('自主完成一个端到端完整项目');
-  assert.equal((await response.json()).provider, 'kimi');
+  response = await post('自主完成一个端到端完整项目', 'local-test-token', true);
+  assert.equal(response.headers.get('x-router-provider'), 'kimi');
+  await response.text();
   assert.equal(calls.at(-1).body.model, 'kimi-k3.1-pro');
 
   response = await post('你好', 'local-test-token', true);
@@ -117,20 +118,22 @@ test('upstream probe failure is committed and exported as a de-escalation metric
   const post = messages => fetch(`http://127.0.0.1:${port}/v1/messages`, {
     method: 'POST',
     headers: { authorization: 'Bearer local-test-token', 'content-type': 'application/json' },
-    body: JSON.stringify({ model: 'auto', messages }),
+    body: JSON.stringify({ model: 'auto', stream: true, messages }),
   });
   const initial = [{ role: 'user', content: '自主完成一个端到端完整项目' }];
   const checkpoint = [...initial, { role: 'assistant', content: '第一阶段完成' }, { role: 'user', content: '继续' }];
 
   let response = await post(initial);
-  assert.equal((await response.json()).provider, 'kimi');
+  assert.equal(response.headers.get('x-router-provider'), 'kimi');
+  await response.text();
   response = await post(checkpoint);
   assert.equal(response.status, 503);
   assert.equal(response.headers.get('x-router-source'), 'deescalation_probe');
   await response.text();
   response = await post(checkpoint);
   assert.equal(response.headers.get('x-router-source'), 'sticky');
-  assert.equal((await response.json()).provider, 'kimi');
+  assert.equal(response.headers.get('x-router-provider'), 'kimi');
+  await response.text();
 
   response = await fetch(`http://127.0.0.1:${port}/metrics`, {
     headers: { authorization: 'Bearer local-test-token' },
@@ -175,6 +178,9 @@ test('route_decision log carries audit keys and de-escalation outcome', async t 
   assert.match(decision.taskKey, /^[a-f0-9]{64}$/);
   assert.equal(decision.deescalationOutcome, null);
   assert.ok(decision.stats, 'tool statistics are logged alongside the decision');
+  assert.deepEqual(decision.media, { video: false, image: false });
+  assert.equal(decision.hardCapability, false);
+  assert.deepEqual(decision.capabilityKinds, []);
 });
 
 test('preview is side-effect free and sticky routing avoids repeated triage', async t => {
@@ -203,7 +209,7 @@ test('preview is side-effect free and sticky routing avoids repeated triage', as
   const post = (messages, pathname = '/v1/messages') => fetch(`http://127.0.0.1:${port}${pathname}`, {
     method: 'POST',
     headers: { authorization: 'Bearer local-test-token', 'content-type': 'application/json' },
-    body: JSON.stringify({ model: 'auto', metadata, messages }),
+    body: JSON.stringify({ model: 'auto', stream: true, metadata, messages }),
   });
 
   let response = await post([{ role: 'user', content: task }], '/v1/router/preview?beta=true');
@@ -213,7 +219,8 @@ test('preview is side-effect free and sticky routing avoids repeated triage', as
 
   response = await post([{ role: 'user', content: task }]);
   assert.equal(response.headers.get('x-router-source'), 'semantic');
-  assert.equal((await response.json()).provider, 'kimi');
+  assert.equal(response.headers.get('x-router-provider'), 'kimi');
+  await response.text();
 
   response = await post([
     { role: 'user', content: task },
@@ -221,7 +228,8 @@ test('preview is side-effect free and sticky routing avoids repeated triage', as
     { role: 'user', content: '继续' },
   ], '/v1/messages?beta=true');
   assert.equal(response.headers.get('x-router-source'), 'sticky');
-  assert.equal((await response.json()).provider, 'kimi');
+  assert.equal(response.headers.get('x-router-provider'), 'kimi');
+  await response.text();
   assert.equal(triageCalls, 1, 'preview result is cached; sticky follow-up does not re-triage');
 });
 
