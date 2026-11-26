@@ -9,6 +9,7 @@ The version area with the problem analysis and measured evidence lives in [VERSI
 ### Fixed
 
 - The status line no longer shows an idle timer. A freshly started terminal inherited the timestamp of the last untagged request in the log and could display `○ idle 28m` before it had done anything. Idle now renders as `○ idle`; an active request still shows its elapsed time.
+- The activity strip keeps a fixed start column. Its label varies in width (`○ idle`, `● Kimi 12s`, `● DeepSeek 1m 05s`), so the strip used to shift horizontally and the narrow-terminal trim changed with it. The label is now padded to 18 columns, and the strip starts at the same position for every provider and elapsed time.
 
 ### Documentation
 

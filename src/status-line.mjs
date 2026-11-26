@@ -39,6 +39,12 @@ const VERSION_REFRESH_STAMP_MS = 2 * 60 * 1000;
 
 export const DEFAULTS = Object.freeze({ cells: 40, cellMs: 2000 });
 
+// Fixed status column. Without it, "○ idle", "● Kimi 12s", and
+// "● DeepSeek 1m 05s" are different widths, so the strip starts in a different
+// column and the narrow-terminal trim changes between refreshes. The widest
+// normal label, "● DeepSeek 99h 59m", is 18 columns.
+export const STATUS_WIDTH = 18;
+
 function envNumber(env, name, fallback, min, max) {
   const raw = env?.[name];
   if (raw == null || raw === '') return fallback;
@@ -146,12 +152,14 @@ export function buildStatusLine(state) {
 
   if (available) {
     const latest = inFlight.length ? inFlight[0] : null;
+    // Pad to a fixed width so the strip below keeps one start column.
     if (latest) {
-      statusPlain = `● ${NAMES[latest.provider]} ${formatElapsed(now - latest.start)}`;
+      statusPlain = `● ${NAMES[latest.provider]} ${formatElapsed(now - latest.start)}`
+        .padEnd(STATUS_WIDTH);
     } else {
       // No timer when idle: a fresh terminal must not inherit the age of the
       // last untagged request in the log and claim it has been idle for 28m.
-      statusPlain = '○ idle';
+      statusPlain = '○ idle'.padEnd(STATUS_WIDTH);
     }
 
     if (columns > 0) {
