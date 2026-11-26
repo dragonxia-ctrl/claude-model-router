@@ -442,7 +442,7 @@ Install the bundled terminal mod from the repository marketplace, then restart C
 /plugin install usage-probe@claude-model-router
 ```
 
-After each completed turn it shows DeepSeek/Kimi token totals, token ratios, and model-request time immediately above the native turn-duration footer. `/router-usage` shows the detailed breakdown. The probe is terminal-only and does not need provider keys.
+After each completed turn it shows DeepSeek/Kimi token totals, token ratios, and model-request time immediately above the native turn-duration footer, plus a `Session` block that keeps the whole conversation's totals across context compactions. `/router-usage` shows the detailed breakdown. The probe is terminal-only and does not need provider keys.
 
 ### Version display in Claude Code
 
