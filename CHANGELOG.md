@@ -4,6 +4,13 @@ All notable changes are documented here. The format follows Keep a Changelog and
 
 The version area with the problem analysis and measured evidence lives in [VERSIONS.md](VERSIONS.md).
 
+## [Unreleased]
+
+### Documentation
+
+- README.md and README.zh-CN.md now show the complete request and side-channel map: `config.json` plus SIGHUP reload, the DeepSeek recovery-probe path, health/version/metrics, optional telemetry persistence, all status-line inputs, the detached version refresh, and `auto-update-state.json`. Their component tables add health/http-utils/telemetry/usage/views and the control/version/verification scripts, and the request lifecycle covers session-scoped conversation keys and DeepSeek thinking placeholders.
+- `docs/architecture.md` now lists every current endpoint with its authentication, describes the native/launchd/container process model and session-scoped `conversationKey`, and documents leading-marker overrides, DeepSeek thinking placeholders, status-line/update side channels, and probe/version/update failure behavior.
+
 ## [1.6.1] - 2026-11-26
 
 ### Fixed
