@@ -7,6 +7,7 @@ import { liveHealth, readinessHealth, deepHealth } from './health.mjs';
 import { ROUTER_VERSION } from './version.mjs';
 import { createDecisionEngine } from './decision-engine.mjs';
 import { createTelemetry } from './telemetry.mjs';
+import { sessionTagFor } from './session.mjs';
 
 export function createHandler(configSource, options = {}) {
   const getConfig = typeof configSource === 'function' ? configSource : () => configSource;
@@ -112,6 +113,8 @@ export function createHandler(configSource, options = {}) {
         error(res, 404, 'not_found_error', 'Unsupported endpoint'); return;
       }
       let body = await readJson(req);
+      // Read before sanitizing; only the hashed tag is logged, never the uuid.
+      const session = sessionTagFor(req.headers, body.metadata);
       const isPreview = pathname === '/v1/router/preview';
       const { decision, previousProvider, config, state, transition, checkpoint } = await engine.resolve(body, {
         semantic: pathname === '/v1/messages' || isPreview,
@@ -147,6 +150,7 @@ export function createHandler(configSource, options = {}) {
         model: provider.model, reason: decision.reason, source: decision.source,
         stream: Boolean(body.stream), stats: decision.stats || null,
         conversationKey: decision.conversationKey, taskKey: decision.taskKey,
+        session,
         capabilityKinds: decision.capabilityKinds || null,
         hardCapability: decision.hardCapability ?? null,
         media: decision.media || null,

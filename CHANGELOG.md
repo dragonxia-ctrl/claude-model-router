@@ -4,6 +4,22 @@ All notable changes are documented here. The format follows Keep a Changelog and
 
 The version area with the problem analysis and measured evidence lives in [VERSIONS.md](VERSIONS.md).
 
+## [1.6.0] - 2026-11-26
+
+Consolidated release of the four capabilities that landed on `main` today. Routing policy is unchanged; this release makes them compose correctly and fixes the per-terminal status view.
+
+### Added
+
+- **Model activity strip in the native status line** (1.5.1): the model serving the current request, its elapsed time, an 80-second DeepSeek/Kimi sample in model colors, and the release segment.
+- **Automatic updates** (1.4.0): a detached, verified updater with a backup, offline tests, health/preview checks, rollback, and status-line states.
+- **Independent Kimi exit clocks** (1.5.0): recovery reviews now open on tool-call, request, or time windows instead of tool calls alone.
+- **Session-scoped Usage totals** in the usage-probe mod: the `Session` rows keep the whole session's numbers across context compactions instead of showing only the latest turn.
+
+### Fixed
+
+- The status strip now really is per terminal. 1.5.1 shipped the per-session view but `src/handler.mjs` never wrote the tag, so every `route_decision` was untagged and every terminal showed the whole router. The handler now logs `session`, a 16-hex hash of the Claude Code session uuid (header `x-claude-code-session-id`, falling back to `metadata.user_id`'s `session_id`), read before the body is sanitized. Only the hash is logged — never the uuid or device id — and clients that send neither identifier still log `session: null` and render the global view.
+- A restart no longer leaves phantom activity in the status strip. `readStatusState` filtered the log down to `route_decision` and `request_complete`, which dropped the `started` record that closes the previous process's unfinished requests. Those orphans looked active for ten minutes in every view. `started` is now ingested too.
+
 ## [1.5.1] - 2026-11-26
 
 ### Added

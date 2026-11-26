@@ -64,6 +64,7 @@ Each routed request writes one `route_decision` JSON line to `router.log`:
 | `stream` | Whether the client asked for a streaming response; only `stream: true` requests are treated as interactive for benchmark text heuristics |
 | `stats` | Tool-history counters behind progress escalation |
 | `conversationKey`, `taskKey` | Pseudonymous session/task identifiers for replay and correlation |
+| `session` | A 16-hex hash of the Claude Code session uuid, taken from the `x-claude-code-session-id` header or `metadata.user_id`. `null` when the client sends neither. The uuid and device id are never logged; the status line uses this to show one terminal's activity |
 | `capabilityKinds`, `hardCapability`, `media` | Which benchmark/capability rules fired, whether any of them blocks de-escalation, and which media block kinds were actually present (`video`, `image`) |
 | `deescalationOutcome` | Probe, relapse, blocked-window, or capability-block outcome |
 | `deescalationCheckpoint` | Which checkpoint opened this review: `user`, `tool_window`, `request_window`, `idle_window`, `manual`, or `null` |
@@ -107,8 +108,8 @@ Files are named `requests-YYYY-MM-DD[-n].jsonl`, created with owner-only permiss
 
 ```json
 {
-  "current": "1.4.0",
-  "latest": "v1.4.0",
+  "current": "1.6.0",
+  "latest": "v1.6.0",
   "status": "current",
   "updateAvailable": false,
   "checkedAt": "2026-11-26T13:50:00.000Z",
@@ -136,7 +137,7 @@ The router checks the public GitHub `releases/latest` endpoint of its own reposi
 }
 ```
 
-It prints `router v1.4.0 · latest v1.4.0` dimmed, `router v1.4.0 · v1.5.0 available` in amber when an upgrade exists, and `router v1.3.0 · update installed, restart to update` in amber when the deployed `version.mjs` is newer than the running process. With automatic updates on, an upgrade notice ends with `· auto-update on`, `· auto-update running`, or `· auto-update failed`. It prints nothing when the router has never written a version cache.
+It prints `router v1.6.0 · latest v1.6.0` dimmed, `router v1.6.0 · v1.6.1 available` in amber when an upgrade exists, and `router v1.6.0 · update installed, restart to update` in amber when the deployed `version.mjs` is newer than the running process. With automatic updates on, an upgrade notice ends with `· auto-update on`, `· auto-update running`, or `· auto-update failed`. It prints nothing when the router has never written a version cache.
 
 The render reads only local files, so it is safe on every status line refresh. When the cached check is older than ten minutes, it starts a detached `--refresh` child that performs one GitHub lookup and updates the cache; a stamp file limits the whole machine to one attempt every two minutes, so several Claude Code windows share a single refresh. The child is silent on failure. Mods such as the usage probe run in a sandbox without `fetch`, `process`, or filesystem access, which is why version visibility uses the status line rather than the turn footer.
 
