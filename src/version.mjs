@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-export const ROUTER_VERSION = '1.5.0';
+export const ROUTER_VERSION = '1.5.1';
 export const REPOSITORY = 'dragonxia-ctrl/claude-model-router';
 
 const DEFAULT_INTERVAL_MS = 30 * 60 * 1000;
@@ -36,6 +36,44 @@ export function updateStatus(current, latest) {
   if (order === null) return 'unknown';
   if (order < 0) return 'available';
   return order > 0 ? 'ahead' : 'current';
+}
+
+/**
+ * The text Claude Code shows for the router: running release, published
+ * release, and — when the files on disk are newer than the running process, or
+ * an automatic install is in flight — the state that explains the difference.
+ * Both the activity strip (src/status-line.mjs) and the plain version helper
+ * (scripts/version-status.mjs) render this, so the wording cannot drift.
+ */
+export function versionState(info, { installed = null, autoUpdate = false, autoState = null } = {}) {
+  if (!info?.current) return null;
+  const label = value => (String(value).startsWith('v') ? String(value) : `v${value}`);
+  const current = label(info.current);
+  const latest = parseVersion(info.latest) ? info.latest : null;
+  const pendingRestart = Boolean(installed && compareVersions(installed, info.current) > 0);
+  const available = Boolean(
+    !pendingRestart && latest && compareVersions(latest, info.current) > 0,
+  );
+  if (pendingRestart) {
+    // Deployed but not restarted: the process still runs the old release.
+    return { text: `router ${current} · update installed, restart to update`, tone: 'amber' };
+  }
+  if (available) {
+    const same = value => value && compareVersions(value, latest) === 0;
+    let text = `router ${current} · ${label(latest)} available`;
+    if (autoUpdate === true) {
+      if (autoState?.status === 'running' && same(autoState.version)) {
+        text += ' · auto-update running';
+      } else if (autoState?.status === 'failed' && same(autoState.lastVersion)) {
+        text += ' · auto-update failed';
+      } else {
+        text += ' · auto-update on';
+      }
+    }
+    return { text, tone: 'amber' };
+  }
+  if (latest) return { text: `router ${current} · latest ${label(latest)}`, tone: 'dim' };
+  return { text: `router ${current}`, tone: 'dim' };
 }
 
 function localVersionInfo(current = ROUTER_VERSION) {
