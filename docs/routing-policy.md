@@ -163,8 +163,15 @@ Highest precedence:
 
 - model names beginning with `kimi`, `claude-opus`, or `claude-fable` select Kimi;
 - model names beginning with `deepseek` or `claude-haiku` select DeepSeek;
-- `[kimi]`, `use kimi`, `使用 kimi`, and `强制 kimi` select Kimi;
-- corresponding DeepSeek phrases select DeepSeek.
+- `[kimi]` or `[deepseek]` at the start of the prompt selects that provider.
+  A prompt that starts with `[deepseek]` stays on DeepSeek even if it later
+  discusses Kimi. A marker inside quoted material is not an instruction;
+- a leading `force kimi` / `force deepseek` (or `强制 kimi` / `强制 deepseek`)
+  does the same.
+
+Ordinary mentions such as `use kimi` or `使用 kimi` are **not** instructions:
+they occur in normal questions and in conversation text copied into background
+requests, and treating them as commands forced Kimi onto DeepSeek work.
 
 These aliases describe routing intent; the actual upstream model is still the configured provider model.
 

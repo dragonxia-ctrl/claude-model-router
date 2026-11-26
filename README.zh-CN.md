@@ -33,7 +33,7 @@ Claude Code 通常只为会话配置一个模型。但实际工作负载是混�
 ## 功能特性
 
 - 将 Claude Code 的 Anthropic Messages API 兼容流量转发给 DeepSeek 或 Kimi。
-- 日常编码、架构设计、重构、修 bug、Kaggle、数据科学、金融、法律和一般问题默认走 **DeepSeek**；任务长或难本身不会自动触发 Kimi。
+- 日常编码、架构设计、重构、修 bug、Kaggle、数据科学、金融、法律和一般问题默认走 **DeepSeek**；任务长或难本身不会自动触发 Kimi。新对话从 DeepSeek 开始，不会继承其他对话的 Kimi 驻留状态，即使两条对话的第一句话相同。
 - 以下任务会使用 **Kimi**：
   - 真正的视频媒体块；
   - 真正的长程、自主项目交付；
@@ -52,7 +52,7 @@ Claude Code 通常只为会话配置一个模型。但实际工作负载是混�
 - 跨供应商时清理不兼容的 thinking / redacted_thinking 内容块。
 - 在 Claude Code 原生状态栏显示当前 router 版本与最新发布版本、当前终端的模型活动条，以及更新提示（命令行可用 `claude-router version` 查看同样信息）。
 - 开启 `updates.auto` 后，可自动安装新的已发布版本，走与手动命令完全相同的验证流程。
-- 支持通过模型名或提示词中的 `[kimi]` / `[deepseek]` 显式指定供应商。
+- 支持通过模型名或开头的 `[kimi]` / `[deepseek]` 标记显式指定供应商；问题里普通提到“使用 Kimi”不会切换供应商。
 
 **暂不支持：** OpenAI、Gemini、Groq、本地模型，以及 DeepSeek 与 Kimi 之外的任何供应商。新增供应商属于架构变更，而不是改一个配置项；请阅读 [CONTRIBUTING.md](CONTRIBUTING.md)。
 

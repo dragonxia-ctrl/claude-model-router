@@ -61,6 +61,7 @@ Each routed request writes one `route_decision` JSON line to `router.log`:
 | Field | Meaning |
 | --- | --- |
 | `provider`, `model`, `source`, `reason` | Chosen upstream and why |
+| `requestedModel` | The client-facing model name before the provider model replaces it (`auto`, a router alias, or a Claude model id); diagnostic only, never a prompt |
 | `stream` | Whether the client asked for a streaming response; only `stream: true` requests are treated as interactive for benchmark text heuristics |
 | `stats` | Tool-history counters behind progress escalation |
 | `conversationKey`, `taskKey` | Pseudonymous session/task identifiers for replay and correlation |

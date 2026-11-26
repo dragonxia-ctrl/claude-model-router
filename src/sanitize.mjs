@@ -1,9 +1,22 @@
 export function sanitizeForProvider(body, previousProvider, nextProvider) {
   const copy = structuredClone(body);
   const switched = previousProvider && previousProvider !== nextProvider;
-  if (!switched && nextProvider !== 'deepseek') return copy;
+  const deepseek = nextProvider === 'deepseek';
+  if (!switched && !deepseek) return copy;
   for (const message of copy.messages || []) {
-    if (message?.role !== 'assistant' || !Array.isArray(message.content)) continue;
+    if (message?.role !== 'assistant') continue;
+    if (typeof message.content === 'string') {
+      // DeepSeek's thinking mode wants a thinking block on every assistant
+      // turn; a client can replay turns as plain strings.
+      if (deepseek) {
+        message.content = [
+          { type: 'thinking', thinking: ' ', signature: '' },
+          { type: 'text', text: message.content },
+        ];
+      }
+      continue;
+    }
+    if (!Array.isArray(message.content)) continue;
     message.content = message.content.filter(block => {
       if (block?.type === 'redacted_thinking') return false;
       if (block?.type === 'thinking' && switched) return false;
@@ -12,11 +25,13 @@ export function sanitizeForProvider(body, previousProvider, nextProvider) {
     if (!message.content.length) {
       message.content = [{ type: 'text', text: '[Prior reasoning omitted during provider routing.]' }];
     }
-    if (switched && nextProvider === 'deepseek') {
-      // DeepSeek thinking models can reject replayed assistant turns that carry
-      // no reasoning content. A non-empty placeholder is the workaround used by
-      // OmniRoute for this same deepseek-flash 400 (issue #20260). The synthetic
-      // value is never persisted into the client conversation.
+    // DeepSeek's thinking mode rejects a request (HTTP 400, "content[].thinking
+    // ... must be passed back") when any assistant turn — especially a tool_use
+    // turn — has no thinking block. Kimi's signatures are not valid for
+    // DeepSeek, so after a switch they are replaced by this placeholder. Apply
+    // it on every DeepSeek request, not only on a switch: a client can replay
+    // plain-string or tool-only turns, and a probe must not fail for this.
+    if (deepseek && !message.content.some(block => block?.type === 'thinking')) {
       message.content.unshift({ type: 'thinking', thinking: ' ', signature: '' });
     }
   }

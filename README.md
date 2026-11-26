@@ -33,7 +33,7 @@ This project puts a small HTTP proxy on `127.0.0.1` between Claude Code and the 
 ## What it does
 
 - Routes Claude Code's Anthropic-compatible Messages API traffic to DeepSeek or Kimi.
-- Defaults to **DeepSeek** for ordinary coding, architecture, refactoring, bug fixing, Kaggle, data science, finance, legal work, and general questions—even when the task is large or difficult.
+- Defaults to **DeepSeek** for ordinary coding, architecture, refactoring, bug fixing, Kaggle, data science, finance, legal work, and general questions—even when the task is large or difficult. A new conversation starts on DeepSeek and does not inherit another conversation's Kimi residency, even when both start with the same text.
 - Escalates to **Kimi** for:
   - actual video media blocks,
   - genuine long-horizon autonomous project delivery,
@@ -52,7 +52,7 @@ This project puts a small HTTP proxy on `127.0.0.1` between Claude Code and the 
 - Removes incompatible thinking blocks when switching providers.
 - Shows the running and latest published release in Claude Code's native status line, together with a per-terminal model-activity strip and an upgrade notice (`claude-router version` prints the same state).
 - Can install a newer published release by itself when `updates.auto` is on, through the same verified update path as the manual command.
-- Supports explicit forcing with a model alias or `[kimi]` / `[deepseek]` in the prompt.
+- Supports explicit forcing with a model alias or a leading `[kimi]` / `[deepseek]` marker. Ordinary mentions such as “use Kimi” in a question do not switch providers.
 
 **Not supported yet:** OpenAI, Gemini, Groq, local models, or any provider other than DeepSeek and Kimi. Adding a provider is a design change, not a configuration tweak; see [CONTRIBUTING.md](CONTRIBUTING.md).
 

@@ -102,6 +102,25 @@ test('explicit model choice wins', () => {
   assert.equal(classifyRequest(request('自主完成完整项目', { model: 'deepseek-flash' })).provider, 'deepseek');
 });
 
+test('a bracketed marker is the only prompt-level override', () => {
+  // A leading [deepseek] must win even when the same message discusses Kimi.
+  assert.equal(classifyRequest(request('[deepseek] 为什么有时会使用kimi？')).provider, 'deepseek');
+  assert.equal(classifyRequest(request('[kimi] 日常改一个函数')).provider, 'kimi');
+  // Talking about the phrase is not an instruction to switch.
+  assert.equal(classifyRequest(request('为什么要使用kimi？')).provider, 'deepseek');
+  assert.equal(classifyRequest(request('use kimi in the docs, but explain it')).provider, 'deepseek');
+  // A marker inside quoted material is not a leading instruction.
+  assert.equal(classifyRequest(request('请解释文档里的 [kimi] 标记')).provider, 'deepseek');
+});
+
+test('the conversation key is scoped to the session', () => {
+  const body = request('hi');
+  const a = classifyRequest(body, { session: 'session-a' }).conversationKey;
+  const b = classifyRequest(body, { session: 'session-b' }).conversationKey;
+  assert.notEqual(a, b);
+  assert.equal(a, classifyRequest(body, { session: 'session-a' }).conversationKey);
+});
+
 test('provider switch strips incompatible thinking and adds a DeepSeek reasoning placeholder', () => {
   const body = { messages: [{ role: 'assistant', content: [
     { type: 'thinking', thinking: 'reasoning', signature: 'sig' },
@@ -116,4 +135,40 @@ test('provider switch strips incompatible thinking and adds a DeepSeek reasoning
   ]);
   const unchanged = sanitizeForProvider(body, 'deepseek', 'deepseek');
   assert.equal(unchanged.messages[0].content[0].thinking, 'reasoning');
+});
+
+test('every DeepSeek assistant turn carries a thinking block', () => {
+  // A plain-string assistant turn used to be skipped entirely, and DeepSeek
+  // then rejected the tool-use conversation with HTTP 400.
+  const stringTurn = { messages: [
+    { role: 'user', content: 'hi' },
+    { role: 'assistant', content: 'Hello.' },
+  ] };
+  assert.equal(sanitizeForProvider(stringTurn, 'kimi', 'kimi').messages[1].content, 'Hello.');
+  const converted = sanitizeForProvider(stringTurn, 'deepseek', 'deepseek');
+  assert.deepEqual(converted.messages[1].content, [
+    { type: 'thinking', thinking: ' ', signature: '' },
+    { type: 'text', text: 'Hello.' },
+  ]);
+
+  // A tool_use turn with no thinking block must get a placeholder even when
+  // the provider did not just switch (a replayed or restarted conversation).
+  const toolTurn = { messages: [
+    { role: 'user', content: 'read' },
+    { role: 'assistant', content: [{ type: 'tool_use', id: 't1', name: 'Read', input: {} }] },
+  ] };
+  const fixed = sanitizeForProvider(toolTurn, 'deepseek', 'deepseek');
+  assert.deepEqual(fixed.messages[1].content[0], { type: 'thinking', thinking: ' ', signature: '' });
+  assert.equal(fixed.messages[1].content[1].type, 'tool_use');
+
+  // An existing DeepSeek thinking block is kept rather than duplicated.
+  const valid = { messages: [
+    { role: 'assistant', content: [
+      { type: 'thinking', thinking: 'reason', signature: 'sig' },
+      { type: 'text', text: 'ok' },
+    ] },
+  ] };
+  const kept = sanitizeForProvider(valid, 'deepseek', 'deepseek');
+  assert.equal(kept.messages[0].content[0].thinking, 'reason');
+  assert.equal(kept.messages[0].content.length, 2);
 });
