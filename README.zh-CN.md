@@ -487,6 +487,17 @@ claude-router update --auto        # 查看开关、最近一次尝试及其错�
 
 （`version-status.mjs` 对应仓库中的 `scripts/version-status.mjs`；手动部署时把它复制到数据目录。）
 
+同一个配置也可以指向 `status-line.mjs`，它会在版本段前面加上模型活动条：
+
+```json
+"statusLine": {
+  "type": "command",
+  "command": "node \"$HOME/.claude/model-router/status-line.mjs\""
+}
+```
+
+它从 Claude Code 通过 stdin 传入的 JSON 读取 `session_id`，显示成 `● Kimi 12s  ███…  router v1.4.0 · latest v1.4.0`：当前处理请求的模型、最近 80 秒的 DeepSeek（蓝色）/Kimi（琥珀色）流量，以及下面同样的版本状态。当 router 日志带有会话标记时，只显示本终端的活动；旧日志则显示全局视图。`CLAUDE_ROUTER_CELLS` 和 `CLAUDE_ROUTER_CELL_MS` 可以调整采样窗口。`claude-router update` 会把活动条和运行时一起部署（`src/status-line.mjs`、`src/activity.mjs`、`src/session.mjs`）。
+
 状态栏的渲染路径只读本地文件，显示规则：
 
 - 运行版本已是最新时，暗色显示 `router v1.4.0 · latest v1.4.0`。

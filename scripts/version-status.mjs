@@ -27,11 +27,6 @@ const cachePath = process.env.CLAUDE_ROUTER_VERSION_CACHE
 const dataDir = path.dirname(cachePath);
 const configPath = process.env.CLAUDE_ROUTER_CONFIG || path.join(dataDir, 'config.json');
 
-function label(value) {
-  const text = String(value);
-  return text.startsWith('v') ? text : `v${text}`;
-}
-
 function readJson(file) {
   try {
     return JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -128,43 +123,15 @@ async function main() {
   const info = readJson(cachePath);
   if (!info?.current) return;
 
-  const current = label(info.current);
-  const latest = versions.parseVersion(info.latest) ? info.latest : null;
-  const installed = installedVersion(versions);
-  const pendingRestart = Boolean(installed && versions.compareVersions(installed, info.current) > 0);
-  const available = Boolean(
-    !pendingRestart && latest && versions.compareVersions(latest, info.current) > 0,
-  );
-
-  let text;
-  let color = DIM;
-  const sameVersion = (a, b) => a && b && versions.compareVersions(a, b) === 0;
-  if (pendingRestart) {
-    // The files on disk are newer than the running process: deploy happened,
-    // but the service has not been restarted yet.
-    text = `router ${current} · update installed, restart to update`;
-    color = AMBER;
-  } else if (available) {
-    text = `router ${current} · ${label(latest)} available`;
-    color = AMBER;
-    if (autoUpdateEnabled()) {
-      const state = readJson(path.join(dataDir, 'auto-update-state.json'));
-      if (state?.status === 'running' && sameVersion(state.version, latest)) {
-        text += ' · auto-update running';
-      } else if (state?.status === 'failed' && sameVersion(state.lastVersion, latest)) {
-        text += ' · auto-update failed';
-      } else {
-        text += ' · auto-update on';
-      }
-    }
-  } else if (latest) {
-    text = `router ${current} · latest ${label(latest)}`;
-  } else {
-    text = `router ${current}`;
-  }
+  const segment = versions.versionState(info, {
+    installed: installedVersion(versions),
+    autoUpdate: autoUpdateEnabled(),
+    autoState: readJson(path.join(dataDir, 'auto-update-state.json')),
+  });
+  if (!segment) return;
 
   // Dim while up to date; amber when an upgrade needs attention.
-  process.stdout.write(`${color}${text}\u001b[0m\n`);
+  process.stdout.write(`${segment.tone === 'amber' ? AMBER : DIM}${segment.text}\u001b[0m\n`);
   spawnRefresh(info);
 }
 

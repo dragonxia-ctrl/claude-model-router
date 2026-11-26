@@ -13,3 +13,6 @@ import './telemetry.test.mjs';
 import './install.test.mjs';
 import './cli.test.mjs';
 import './doctor.test.mjs';
+import './activity.test.mjs';
+import './session.test.mjs';
+import './status-line.test.mjs';

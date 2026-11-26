@@ -486,6 +486,17 @@ To see it inside Claude Code in the native status line — the same place Claude
 
 (`version-status.mjs` is `scripts/version-status.mjs` in this repository; copy it into the data directory for a manual install.)
 
+The same setting can point at `status-line.mjs` instead, which puts the model activity strip in front of the release segment:
+
+```json
+"statusLine": {
+  "type": "command",
+  "command": "node \"$HOME/.claude/model-router/status-line.mjs\""
+}
+```
+
+It reads `session_id` from the JSON Claude Code passes on stdin and renders `● Kimi 12s  ███…  router v1.4.0 · latest v1.4.0`: the model serving the current request, an 80-second sample of DeepSeek (blue) and Kimi (amber) traffic, and the same release states listed below. When the router log carries session tags, the strip shows only this terminal's activity; older logs render the global view. `CLAUDE_ROUTER_CELLS` and `CLAUDE_ROUTER_CELL_MS` widen the sample. `claude-router update` deploys the strip with the runtime (`src/status-line.mjs`, `src/activity.mjs`, and `src/session.mjs`).
+
 The status line uses local files only on the render path and shows:
 
 - `router v1.4.0 · latest v1.4.0` dimmed when the running release is current.

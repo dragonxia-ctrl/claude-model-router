@@ -4,6 +4,13 @@ All notable changes are documented here. The format follows Keep a Changelog and
 
 The version area with the problem analysis and measured evidence lives in [VERSIONS.md](VERSIONS.md).
 
+## [1.5.1] - 2026-11-26
+
+### Added
+
+- **Activity strip in the native status line** (`src/status-line.mjs`). It renders the model serving the current request, its elapsed time, an 80-second sample of DeepSeek/Kimi traffic, and the router release segment. It reads `session_id` from the JSON Claude Code passes on stdin, so it shows one terminal's activity when the router logs session tags; older logs render the global view. `CLAUDE_ROUTER_CELLS` and `CLAUDE_ROUTER_CELL_MS` widen the window. `claude-router update` deploys it together with `src/activity.mjs` and `src/session.mjs`.
+- `versionState()` in `src/version.mjs` now produces the release segment for both the activity strip and `scripts/version-status.mjs`, so the two helpers cannot drift. The strip also starts the same throttled `version-status.mjs --refresh` child when the cached release check is older than ten minutes.
+
 ## [1.5.0] - 2026-11-26
 
 ### Changed
