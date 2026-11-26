@@ -10,6 +10,11 @@ The version area with the problem analysis and measured evidence lives in [VERSI
 
 - The status line no longer shows an idle timer. A freshly started terminal inherited the timestamp of the last untagged request in the log and could display `○ idle 28m` before it had done anything. Idle now renders as `○ idle`; an active request still shows its elapsed time.
 
+### Documentation
+
+- README.md and README.zh-CN.md now name v1.6.1 as the current release instead of the stale `v2 (1.2.0)` label, and their architecture diagram shows the status line, version checker, auto-updater, and usage-probe side channels.
+- CONTRIBUTING.md records the versioning rule: small changes increment only the third number, and the first two are the maintainer's decision.
+
 ## [1.6.0] - 2026-11-26
 
 Consolidated release of the four capabilities that landed on `main` today. Routing policy is unchanged; this release makes them compose correctly and fixes the per-terminal status view.

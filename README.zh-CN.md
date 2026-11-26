@@ -12,7 +12,7 @@
 >
 > 本项目是独立的社区项目，与 Anthropic、DeepSeek、Moonshot AI（月之暗面）均无任何隶属关系，也未获得其官方背书。Claude Code 是 Anthropic 的产品。
 
-**版本信息：** [VERSIONS.md](VERSIONS.md)（英文）——每个版本改了什么、为什么，以及实测证据。当前版本：**v2（1.2.0）**。
+**版本信息：** [CHANGELOG.md](CHANGELOG.md) 记录每个版本的改动。当前版本：**v1.6.1**；截至 1.2.0 的实测记录仍保留在 [VERSIONS.md](VERSIONS.md)（英文）。
 
 ---
 
@@ -50,7 +50,8 @@ Claude Code 通常只为会话配置一个模型。但实际工作负载是混�
 - 对较长且未被规则归类的任务，可选调用 DeepSeek 进行低成本语义分流。分流关闭 thinking、只返回小型 JSON、结果有缓存；任何错误、超时或低置信度都安全回退到 DeepSeek。
 - 同一任务的 Kimi 粘性有上限：在工具循环内避免切换，但在检查点（新用户消息，或长回合内每 12 次新工具调用 / 每 6 次 Kimi 请求 / 每 5 分钟的中途复查）且近期执行已恢复时，会试探性降级到 DeepSeek；失败则回退并指数退避。
 - 跨供应商时清理不兼容的 thinking / redacted_thinking 内容块。
-- 在 Claude Code 原生状态栏显示当前 router 版本与最新发布版本；有更新时高亮提示（命令行可用 `claude-router version` 查看同样信息）。
+- 在 Claude Code 原生状态栏显示当前 router 版本与最新发布版本、当前终端的模型活动条，以及更新提示（命令行可用 `claude-router version` 查看同样信息）。
+- 开启 `updates.auto` 后，可自动安装新的已发布版本，走与手动命令完全相同的验证流程。
 - 支持通过模型名或提示词中的 `[kimi]` / `[deepseek]` 显式指定供应商。
 
 **暂不支持：** OpenAI、Gemini、Groq、本地模型，以及 DeepSeek 与 Kimi 之外的任何供应商。新增供应商属于架构变更，而不是改一个配置项；请阅读 [CONTRIBUTING.md](CONTRIBUTING.md)。
@@ -61,19 +62,52 @@ Claude Code 通常只为会话配置一个模型。但实际工作负载是混�
 
 ```mermaid
 flowchart LR
-    A[Claude Code<br/>终端 · 桌面端 · IDE] -->|Anthropic Messages API| B[本地路由器<br/>127.0.0.1:17861]
-    B --> C{决策引擎}
-    C -->|证据规则| D[Kimi]
-    C -->|默认| E[DeepSeek]
-    C -->|进展信号| D
-    C -->|语义分流| F[DeepSeek 分类器]
-    F --> C
-    D --> G[api.moonshot.cn]
-    E --> H[api.deepseek.com]
-    G --> B
-    H --> B
-    B -->|SSE / JSON| A
+    CC[Claude Code<br/>终端 · 桌面端 · IDE]
+    MOD[usage-probe 模组<br/>单轮与会话用量]
+    R[本地路由器<br/>127.0.0.1:17861]
+    DE{决策引擎}
+    K[Kimi]
+    DS[DeepSeek]
+    CL[DeepSeek 分类器]
+    MOON[api.moonshot.cn]
+    DEEP[api.deepseek.com]
+    LOG[(router.log)]
+    VC[(version-cache.json)]
+    SL[status-line.mjs<br/>按终端过滤的活动条]
+    VCHK[版本检查器]
+    AU[auto-update.mjs]
+    UP[router-update.mjs]
+    GH[(GitHub)]
+
+    CC -->|Anthropic Messages API| R
+    CC --- MOD
+    R --> DE
+    DE -->|证据规则| K
+    DE -->|默认| DS
+    DE -->|进展信号| K
+    DE -->|语义分流| CL
+    CL --> DE
+    K --> MOON
+    DS --> DEEP
+    MOON --> R
+    DEEP --> R
+    R -->|SSE / JSON| CC
+    R -->|route_decision · request_complete| LOG
+    LOG --> SL
+    VC --> SL
+    CC -->|stdin 中的 session_id| SL
+    SL -->|原生状态栏| CC
+    R --> VCHK
+    VCHK -->|releases · tags| GH
+    VCHK --> VC
+    R -->|周期触发| AU
+    AU -->|分离进程| UP
+    UP -->|拉取 · 测试 · 备份 · 重启| R
+    UP --> GH
+    AU --> VC
 ```
+
+左侧是请求路径；状态栏和自动更新是旁路，只读取本地文件，且永远不会阻塞请求。
 
 ### 核心组件
 
@@ -90,7 +124,14 @@ flowchart LR
 | `src/sanitize.mjs` | 跨供应商 thinking 内容清理 |
 | `src/upstream.mjs` | SSE 流式透传、鉴权头、取消请求 |
 | `src/config-store.mjs` | 配置校验、原子热加载 |
+| `src/session.mjs` | 对 Claude Code 会话 id 做哈希，日志里只出现 16 位标记 |
+| `src/activity.mjs` | 把日志事件转换为按会话过滤的活动格与进行中请求 |
+| `src/status-line.mjs` | 原生状态栏：模型活动条、耗时、版本；只读本地文件 |
+| `src/version.mjs` | 发布版本查询、共享版本缓存、更新状态 |
+| `src/auto-update.mjs` | 自动更新周期检查、分离式安装、失败退避 |
+| `scripts/router-update.mjs` | 可验证更新：检出、测试、备份、重启、健康检查、回滚 |
 | `scripts/lib/install-core.mjs` | 安全安装、备份、回滚、卸载 |
+| `mods/usage-probe/` | Claude Code 终端模组：单轮/会话用量脚注、`/router-usage` |
 | `bin/claude-router.mjs` | 用户命令行入口 |
 
 ### 一次请求如何被处理
@@ -109,7 +150,7 @@ flowchart LR
 6. 如果发生跨供应商切换，移除不兼容的 thinking 内容块。
 7. 使用对应供应商的 API key 转发请求。
 8. 响应状态码、Content-Type、SSE 数据块和重试头原样传回。
-9. 结构化日志只记录供应商、原因、来源、是否流式、进展统计、会话/任务键以及降档结果；不记录提示词和 API key。
+9. 结构化日志只记录供应商、原因、来源、是否流式、进展统计、会话/任务键、16 位会话标记、能力/媒体类型以及降档结果；不记录提示词、会话 UUID 和 API key。
 
 ### 路由原则
 
