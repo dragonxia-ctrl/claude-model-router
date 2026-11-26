@@ -16,3 +16,5 @@ import './doctor.test.mjs';
 import './activity.test.mjs';
 import './session.test.mjs';
 import './status-line.test.mjs';
+import './session-route.test.mjs';
+import './session-started.test.mjs';

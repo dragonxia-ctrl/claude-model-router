@@ -214,7 +214,10 @@ export function readStatusState({ logPath, now = Date.now(), cells = DEFAULTS.ce
       body = newline === -1 ? '' : body.slice(newline + 1);
     }
     for (const line of body.split('\n')) {
-      if (!line.includes('route_decision') && !line.includes('request_complete')) continue;
+      // `started` closes requests the previous process left open; dropping it
+      // makes a restart's orphans look active for STALE_OPEN_MS in every view.
+      if (!line.includes('route_decision') && !line.includes('request_complete')
+        && !line.includes('"event":"started"')) continue;
       activity.ingestLine(line);
     }
   } catch {

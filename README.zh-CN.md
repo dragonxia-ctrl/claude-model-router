@@ -496,12 +496,12 @@ claude-router update --auto        # 查看开关、最近一次尝试及其错�
 }
 ```
 
-它从 Claude Code 通过 stdin 传入的 JSON 读取 `session_id`，显示成 `● Kimi 12s  ███…  router v1.4.0 · latest v1.4.0`：当前处理请求的模型、最近 80 秒的 DeepSeek（蓝色）/Kimi（琥珀色）流量，以及下面同样的版本状态。当 router 日志带有会话标记时，只显示本终端的活动；旧日志则显示全局视图。`CLAUDE_ROUTER_CELLS` 和 `CLAUDE_ROUTER_CELL_MS` 可以调整采样窗口。`claude-router update` 会把活动条和运行时一起部署（`src/status-line.mjs`、`src/activity.mjs`、`src/session.mjs`）。
+它从 Claude Code 通过 stdin 传入的 JSON 读取 `session_id`，显示成 `● Kimi 12s  ███…  router v1.6.0 · latest v1.6.0`：当前处理请求的模型、最近 80 秒的 DeepSeek（蓝色）/Kimi（琥珀色）流量，以及下面同样的版本状态。当 router 日志带有会话标记时，只显示本终端的活动（Claude Code 请求现在总会带标记；旧日志则显示全局视图）。`CLAUDE_ROUTER_CELLS` 和 `CLAUDE_ROUTER_CELL_MS` 可以调整采样窗口。`claude-router update` 会把活动条和运行时一起部署（`src/status-line.mjs`、`src/activity.mjs`、`src/session.mjs`）。
 
 状态栏的渲染路径只读本地文件，显示规则：
 
-- 运行版本已是最新时，暗色显示 `router v1.4.0 · latest v1.4.0`。
-- 有新版本时，琥珀色显示 `router v1.4.0 · v1.5.0 available`；开启自动更新后追加 `· auto-update on`、`· auto-update running` 或 `· auto-update failed`。
+- 运行版本已是最新时，暗色显示 `router v1.6.0 · latest v1.6.0`。
+- 有新版本时，琥珀色显示 `router v1.6.0 · v1.6.1 available`；开启自动更新后追加 `· auto-update on`、`· auto-update running` 或 `· auto-update failed`。
 - 部署的 `version.mjs` 比运行进程更新时，琥珀色显示 `router v1.3.0 · update installed, restart to update`。
 
 当缓存的检查结果超过十分钟时，脚本会启动一个带节流的独立 `--refresh` 子进程向 GitHub 查询一次并更新缓存；因此即使 router 从未重启，新版本也会及时显示。失败时静默，多个 Claude Code 窗口共用一个刷新名额。不使用供应商 token；router 从未上报版本时不输出任何内容。在 Claude Code 之外，`claude-router version` 会打印相同的版本信息和自动更新开关。
