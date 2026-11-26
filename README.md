@@ -381,6 +381,7 @@ The active config lives at `~/.claude/model-router/config.json` and is never com
 | `routing.triageTimeoutMs` | Timeout for the classifier |
 | `routing.triageMaxInputChars` | Maximum task characters sent to the classifier |
 | `routing.deescalation` | Bounded Kimi residency, recovery probes, and backoff; see [routing policy](docs/routing-policy.md) |
+| `updates` | Optional automatic installation of published releases (`auto`), the source checkout (`source`), and the launchd label (`launchdLabel`); see [Updating from GitHub](#updating-from-github) |
 | `telemetry` | Optional private JSONL persistence, retention, and rotation; see [observability](docs/observability.md) |
 
 The semantic classifier receives only the current task text, truncated to the configured limit. It does not receive tool results, file contents, or the whole conversation.
@@ -415,6 +416,26 @@ claude-router update --dry-run   # show what would be deployed
 
 It refuses a checkout that is not on `main` or has uncommitted changes, reports "already up to date" without touching anything, and restores the previous files if the restart or verification fails. Docker installs update with `git pull` followed by `npm run compose:up`.
 
+#### Automatic updates
+
+The service install can install new releases by itself. The switch is off by default:
+
+```bash
+claude-router update --auto on     # enable automatic installs
+claude-router update --auto off    # disable them
+claude-router update --auto        # show the switch, the last attempt, and its error
+```
+
+With it on, the running router installs a newer published release by itself. It starts the same updater detached so the launchd restart cannot kill the verifier halfway through: a clean `main` checkout is pulled and verified, the offline tests run, files are deployed with a backup, the service is restarted, and health, `/version`, and a routing preview are verified. The output goes to `auto-update.log` next to `router.log`. A failed attempt backs off for an hour and the status line reports `auto-update failed`; `claude-router update --auto` prints the recorded error.
+
+Requirements and limits:
+
+- The source checkout (`updates.source`, default `~/claude-model-router`) must be on `main` with no uncommitted changes, exactly as for a manual update.
+- The service must be restartable through launchd. Automatic install does not apply to Docker installs; use `git pull` followed by `npm run compose:up` there.
+- The published version is the `package.json` version on `main` (or the newest GitHub release/tag when present). A release that does not bump the version is not installed automatically.
+- If files are deployed but the service has not restarted yet (for example a `--restart none` install), the status line shows `update installed, restart to update`.
+- Turning the switch on or off rewrites only `updates.auto` in `config.json` and sends the running router a SIGHUP so it applies immediately.
+
 Useful endpoints:
 
 | Endpoint | Purpose |
@@ -446,7 +467,7 @@ After each completed turn it shows DeepSeek/Kimi token totals, token ratios, and
 
 ### Version display in Claude Code
 
-`GET /version` reports the running release and the latest published release, and the router writes the same state to `~/.claude/model-router/version-cache.json` at startup and at most every six hours (offline checks are silent).
+`GET /version` reports the running release, the latest published release, and update availability, and the running router writes the same state to `~/.claude/model-router/version-cache.json`. It checks at startup and then at most every 30 minutes (offline checks are silent and keep the last known release).
 
 To see it inside Claude Code in the native status line — the same place Claude Code shows its own version and upgrade notices — add this to `~/.claude/settings.json` and restart Claude Code:
 
@@ -459,7 +480,13 @@ To see it inside Claude Code in the native status line — the same place Claude
 
 (`version-status.mjs` is `scripts/version-status.mjs` in this repository; copy it into the data directory for a manual install.)
 
-The status line then shows `router v1.2.0 · latest v1.2.0` dimmed, and switches to an amber `router v1.2.0 · v1.3.0 available` when a newer release exists. The helper only reads the local cache file: no network access, no provider tokens, and no output when the router has never reported a version. Outside Claude Code, `claude-router version` prints the same information.
+The status line uses local files only on the render path and shows:
+
+- `router v1.4.0 · latest v1.4.0` dimmed when the running release is current.
+- An amber `router v1.4.0 · v1.5.0 available` when a newer release exists. With automatic updates on, it appends `· auto-update on`, `· auto-update running`, or `· auto-update failed`.
+- An amber `router v1.3.0 · update installed, restart to update` when the deployed `version.mjs` is newer than the running process.
+
+When the cached check is older than ten minutes, the helper starts a detached, throttled `--refresh` child; that child asks GitHub once and updates the cache, so a new release appears even if the router predates it and was never restarted. The child is silent on failure and several Claude Code windows share one refresh slot. No provider tokens are used, and there is no output when the router has never reported a version. Outside Claude Code, `claude-router version` prints the same release information and the automatic-update switch.
 
 ---
 

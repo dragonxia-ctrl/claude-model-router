@@ -342,6 +342,7 @@ async function versionCommand(flags) {
     console.log(`Running: ${info.current}`);
     console.log(`Latest: ${info.latest || 'unknown'}`);
     console.log(`Status: ${status}`);
+    console.log(`Auto-update: ${info.autoUpdate ? 'on' : 'off'}`);
     console.log(`Last checked: ${info.checkedAt || 'never'}`);
   }
   return 0;

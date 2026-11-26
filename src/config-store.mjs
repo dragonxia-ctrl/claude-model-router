@@ -58,6 +58,13 @@ export function normalizeConfig(raw) {
       assert(merged.minRecentToolCalls <= merged.windowToolCalls, 'routing.deescalation.minRecentToolCalls must not exceed windowToolCalls');
     }
   }
+  if (raw.updates !== undefined) {
+    assert(raw.updates && typeof raw.updates === 'object' && !Array.isArray(raw.updates), 'updates must be an object');
+    const updates = raw.updates;
+    if (updates.auto !== undefined) assert(typeof updates.auto === 'boolean', 'updates.auto must be a boolean');
+    if (updates.source !== undefined) assert(typeof updates.source === 'string' && updates.source.trim().length > 0, 'updates.source must be a non-empty string');
+    if (updates.launchdLabel !== undefined) assert(typeof updates.launchdLabel === 'string' && updates.launchdLabel.trim().length > 0, 'updates.launchdLabel must be a non-empty string');
+  }
   if (raw.telemetry !== undefined) {
     assert(raw.telemetry && typeof raw.telemetry === 'object' && !Array.isArray(raw.telemetry), 'telemetry must be an object');
     const telemetry = raw.telemetry;

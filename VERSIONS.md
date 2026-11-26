@@ -4,9 +4,23 @@ This page is the version area for **claude-model-router**. The [README](README.m
 
 | Version | Date | Status | Notes |
 |---|---|---|---|
-| **v3 — 1.3.0** | 2026-11-26 | **current** | Capability detection is media-based: text mentions of video no longer hard-lock Kimi, and non-streaming auxiliary calls keep the default provider. Kimi share of the measured session window drops from 52.4% to 25.5% of tokens. [Full report →](docs/versions/v2-to-v3.md) |
+| **v4 — 1.4.0** | 2026-11-26 | **current** | Operational release: optional automatic updates with a switch, a status line that asks for a restart when deployed files are newer than the running process, and a latest-release check that keeps up with GitHub. No routing behavior changes. |
+| v3 — 1.3.0 | 2026-11-26 | previous | Capability detection is media-based: text mentions of video no longer hard-lock Kimi, and non-streaming auxiliary calls keep the default provider. Kimi share of the measured session window drops from 52.4% to 25.5% of tokens. [Full report →](docs/versions/v2-to-v3.md) |
 | v2 — 1.2.0 | 2026-11-25 | previous | Routing fixes: read-only commands are no longer counted as mutations; de-escalation can run mid-turn; audit fields in the route log. Also adds version/update visibility in the Claude Code status line. [Full report →](docs/versions/v1-to-v2.md) |
 | v1 — 1.1.0 | 2026-11-25 | previous | Observability and bounded de-escalation. [Release commit](https://github.com/dragonxia-ctrl/claude-model-router/commit/88491f1) |
+
+---
+
+## v3 → v4 at a glance
+
+This release changes how the router and its status line stay current, not how requests are routed. The measured evidence from v3 still applies unchanged.
+
+| | **v3 (1.3.0)** | **v4 (1.4.0)** |
+|---|---|---|
+| **Latest-release freshness** | Checked at startup and at most every six hours; the status line only read the cache | Checked at most every 30 minutes, plus a throttled background refresh from the status line when the cache is older than ten minutes |
+| **After a deploy before a restart** | Status line kept showing the old running version as current | Amber `update installed, restart to update` |
+| **Automatic installs** | None; `claude-router update` had to be run by hand | `updates.auto` switch (`claude-router update --auto on\|off`); detached updater with tests, verification, rollback, log, and hourly backoff on failure |
+| **Offline release check** | Result could be forgotten; retried on the next request | Last known release is kept; the attempt is recorded so it backs off |
 
 ---
 

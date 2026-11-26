@@ -27,6 +27,8 @@ export function parseArgs(argv, platform = process.platform) {
     force: false,
     dryRun: false,
     help: false,
+    auto: null,
+    autoInstall: false,
   };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -39,7 +41,19 @@ export function parseArgs(argv, platform = process.platform) {
     else if (arg === '--force') options.force = true;
     else if (arg === '--dry-run') options.dryRun = true;
     else if (arg === '--skip-tests') options.tests = false;
-    else if (arg === '--source') options.source = value();
+    else if (arg === '--auto-install') options.autoInstall = true;
+    else if (arg === '--auto') {
+      if (argv[i + 1] === 'on' || argv[i + 1] === 'off') {
+        options.auto = argv[i + 1];
+        i += 1;
+      } else {
+        options.auto = 'status';
+      }
+    } else if (arg.startsWith('--auto=')) {
+      const value = arg.slice('--auto='.length);
+      if (value !== 'on' && value !== 'off') throw new Error('--auto must be on or off');
+      options.auto = value;
+    } else if (arg === '--source') options.source = value();
     else if (arg === '--data-dir') options.dataDir = value();
     else if (arg === '--port') options.port = Number(value());
     else if (arg === '--label') options.label = value();
@@ -74,6 +88,171 @@ export function deployPlan(sourceDir) {
   files.set('version-status.mjs', path.join(sourceDir, 'scripts', 'version-status.mjs'));
   files.set('router-update.mjs', path.join(sourceDir, 'scripts', 'router-update.mjs'));
   return files;
+}
+
+// Kept in sync with src/auto-update.mjs. This file must stay self-contained:
+// the deployed copy lives directly in the data directory, where there is no
+// src/ directory to import from.
+export const AUTO_UPDATE_STATE_FILE = 'auto-update-state.json';
+export const AUTO_UPDATE_LOG_FILE = 'auto-update.log';
+const AUTO_UPDATE_LOCK_MS = 30 * 60 * 1000;
+
+function readAutoState(dataDir) {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(dataDir, AUTO_UPDATE_STATE_FILE), 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+function writeAutoState(dataDir, patch) {
+  const file = path.join(dataDir, AUTO_UPDATE_STATE_FILE);
+  const next = { ...(readAutoState(dataDir) || {}), ...patch };
+  fs.mkdirSync(dataDir, { recursive: true });
+  const temporary = `${file}.${process.pid}.tmp`;
+  fs.writeFileSync(temporary, JSON.stringify(next), { mode: 0o600 });
+  fs.renameSync(temporary, file);
+  return next;
+}
+
+export function installedVersion(dataDir) {
+  try {
+    const text = fs.readFileSync(path.join(dataDir, 'version.mjs'), 'utf8');
+    const match = /ROUTER_VERSION\s*=\s*'([^']+)'/.exec(text);
+    return match ? match[1] : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Turn automatic installation on or off, preserving every other config key. */
+export function setAutoUpdate(configPath, enabled) {
+  const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  config.updates = { ...(config.updates || {}), auto: Boolean(enabled) };
+  const temporary = `${configPath}.${process.pid}.tmp`;
+  fs.writeFileSync(temporary, `${JSON.stringify(config, null, 2)}\n`, { mode: 0o600 });
+  fs.renameSync(temporary, configPath);
+  return config.updates.auto;
+}
+
+function isProcessAlive(pid) {
+  if (!Number.isInteger(pid) || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return error.code === 'EPERM';
+  }
+}
+
+// The router reloads config.json on SIGHUP; sending it means the toggle takes
+// effect without a restart. A stopped service simply picks it up next time.
+function reloadRouterConfig(options) {
+  if (options.restart === 'none' || process.platform !== 'darwin') return;
+  try {
+    const output = execFileSync('launchctl', ['print', `gui/${process.getuid()}/${options.label}`], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+    const match = /^\s*pid = (\d+)\s*$/m.exec(output);
+    if (!match) {
+      console.log('Router is not running; the setting applies at the next start.');
+      return;
+    }
+    process.kill(Number(match[1]), 'SIGHUP');
+    console.log('Router reloaded the new setting (SIGHUP).');
+  } catch {
+    console.log('Could not signal the router; restart it to apply the setting.');
+  }
+}
+
+function autoStatus(options) {
+  const dataDir = path.resolve(options.dataDir);
+  const configPath = path.join(dataDir, 'config.json');
+  const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  const enabled = config.updates?.auto === true;
+  if (options.auto !== 'status') {
+    setAutoUpdate(configPath, options.auto === 'on');
+    console.log(`Auto-update: ${options.auto}`);
+    console.log(`Config: ${configPath}`);
+    reloadRouterConfig(options);
+    return 0;
+  }
+  console.log(`Auto-update: ${enabled ? 'on' : 'off'}`);
+  console.log(`Config: ${configPath}`);
+  const state = readAutoState(dataDir);
+  if (state?.lastAttemptAt) {
+    const version = state.lastVersion || state.version || 'unknown';
+    const message = state.message ? ` — ${state.message}` : '';
+    console.log(`Last attempt: ${state.status} at ${state.lastAttemptAt} (${version})${message}`);
+  }
+  if (!enabled) console.log('Turn it on with: claude-router update --auto on');
+  return 0;
+}
+
+function acquireAutoLock(dataDir) {
+  const lockPath = path.join(dataDir, 'auto-update.lock');
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      fs.mkdirSync(dataDir, { recursive: true });
+      fs.writeFileSync(lockPath, JSON.stringify({
+        pid: process.pid,
+        startedAt: new Date().toISOString(),
+      }), { flag: 'wx', mode: 0o600 });
+      return () => {
+        try { fs.unlinkSync(lockPath); } catch { /* already gone */ }
+      };
+    } catch (error) {
+      if (error.code !== 'EEXIST') throw error;
+      let holder = null;
+      try { holder = JSON.parse(fs.readFileSync(lockPath, 'utf8')); } catch { /* corrupt lock */ }
+      const started = Date.parse(holder?.startedAt || '');
+      const fresh = Number.isFinite(started) && Date.now() - started < AUTO_UPDATE_LOCK_MS;
+      if (fresh && isProcessAlive(holder?.pid)) return null;
+      try { fs.unlinkSync(lockPath); } catch { return null; }
+    }
+  }
+  return null;
+}
+
+/**
+ * Runs one automatic install: the router spawns this detached so the launchd
+ * restart does not kill the verifier. Every outcome, including a refusal
+ * (dirty checkout, offline, failing tests), is recorded for the status line.
+ */
+async function autoInstall(options) {
+  const dataDir = path.resolve(options.dataDir);
+  const release = acquireAutoLock(dataDir);
+  if (!release) {
+    console.log('Another auto-update is already running; nothing to do.');
+    return 0;
+  }
+  const startedAt = new Date().toISOString();
+  writeAutoState(dataDir, { status: 'running', startedAt });
+  try {
+    console.log(`Auto-update starting at ${startedAt}.`);
+    await update({ ...options, auto: null, autoInstall: false });
+    const version = installedVersion(dataDir);
+    // Keep lastVersion/lastAttemptAt from the spawn record: they describe the
+    // release this attempt targeted, which is what the router's backoff uses.
+    writeAutoState(dataDir, {
+      status: 'ok',
+      version,
+      finishedAt: new Date().toISOString(),
+      message: null,
+    });
+    console.log(`Auto-update finished: release ${version || 'unknown'} is installed.`);
+    return 0;
+  } catch (error) {
+    writeAutoState(dataDir, {
+      status: 'failed',
+      finishedAt: new Date().toISOString(),
+      message: error.message,
+    });
+    throw error;
+  } finally {
+    release();
+  }
 }
 
 function git(source, ...args) {
@@ -169,6 +348,16 @@ Options:
   --port <port>      Router port for verification (default: 17861)
   --label <label>    launchd label (default: com.<user>.claude-model-router)
   --restart <mode>   launchd (default on macOS) or none
+  --auto [on|off]    Show or change the automatic-update switch (off by default)
+  --auto-install     Internal: install one detected release in the background
+
+With --auto on, the running router installs a newer published release by itself:
+it pulls a clean main checkout, verifies it, runs the offline tests, deploys,
+restarts, and verifies the live router, logging to auto-update.log. Failures
+back off for an hour; the status line shows "update installed, restart to
+update" when files are deployed but the service has not restarted yet.
+Run "claude-router update --auto" to see the switch, the last attempt, and its
+error.
 `);
 }
 
@@ -238,15 +427,30 @@ export async function update(options = parseArgs([])) {
 const invokedDirectly = process.argv[1]
   && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url));
 if (invokedDirectly) {
-  const options = parseArgs(process.argv.slice(2));
-  if (options.help) {
+  let options;
+  try {
+    options = parseArgs(process.argv.slice(2));
+  } catch (error) {
+    console.error(`ERROR: ${error.message}`);
+    process.exitCode = 1;
+  }
+  if (options?.help) {
     usage();
-  } else {
-    update(options).then(code => {
-      process.exitCode = code || 0;
-    }).catch(error => {
+  } else if (options) {
+    try {
+      if (options.autoInstall && options.auto) throw new Error('--auto-install and --auto cannot be combined');
+      const run = options.autoInstall ? autoInstall(options)
+        : options.auto ? Promise.resolve(autoStatus(options))
+          : update(options);
+      run.then(code => {
+        process.exitCode = code || 0;
+      }).catch(error => {
+        console.error(`ERROR: ${error.message}`);
+        process.exitCode = 1;
+      });
+    } catch (error) {
       console.error(`ERROR: ${error.message}`);
       process.exitCode = 1;
-    });
+    }
   }
 }

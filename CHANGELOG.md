@@ -4,6 +4,20 @@ All notable changes are documented here. The format follows Keep a Changelog and
 
 The version area with the problem analysis and measured evidence lives in [VERSIONS.md](VERSIONS.md).
 
+## [1.4.0] - 2026-11-26
+
+### Added
+
+- **Automatic updates.** `updates.auto` (default off) and `claude-router update --auto on|off` let the running router install a newer published release by itself. The install runs as a detached updater — clean `main` checkout, version agreement, offline tests, backup, restart, health/`/version`/preview verification, rollback on failure — so the launchd restart cannot interrupt verification. Output goes to `auto-update.log`, state to `auto-update-state.json`, and a failure backs off for an hour. `claude-router update --auto` prints the switch, the last attempt, and its error.
+- **"update installed, restart to update" in the status line.** When the deployed `version.mjs` is newer than the running process (a `--restart none` install, or the moment before a service restart), the status line shows it in amber instead of claiming the old version is current.
+- The status line names the automatic-update state when an upgrade exists: `· auto-update on`, `· auto-update running`, or `· auto-update failed`.
+
+### Fixed
+
+- The latest release no longer lags a published GitHub version. The router checks at most every 30 minutes instead of every six hours, and when the cached check is older than ten minutes the status line starts a throttled, detached refresh; several Claude Code windows share one GitHub read.
+- A restarted router now writes its release into the cache immediately, even when the cached release check is still fresh, so the status line never shows the previous process's version.
+- A failed or offline release check keeps the last known latest release and records the attempt instead of forgetting the release or retrying on every render. Cache writes are atomic and merge fields owned by other writers.
+
 ## [1.3.0] - 2026-11-26
 
 ### Fixed
