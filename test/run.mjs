@@ -7,6 +7,8 @@ import './version-status.test.mjs';
 import './auto-update.test.mjs';
 import './router-update.test.mjs';
 import './deescalation.test.mjs';
+import './deescalation-correctness.test.mjs';
+import './latency.test.mjs';
 import './config-store.test.mjs';
 import './handler.test.mjs';
 import './telemetry.test.mjs';

@@ -105,12 +105,16 @@ test('a failed upstream probe returns to Kimi with exponential backoff', async (
   await round(engine, messages);
   await round(engine, messages);
   const checkpoint = followUp(messages);
-  const probe = await round(engine, checkpoint, 'upstream_5xx');
+  // An invalid request (for example the 400 caused by a malformed probe body)
+  // consumes a bounded retry attempt. It is not availability evidence.
+  const probe = await round(engine, checkpoint, 'upstream_4xx');
   assert.equal(probe.decision.provider, 'deepseek');
 
   let current = checkpoint;
   let result = await round(engine, current);
   assert.equal(result.decision.provider, 'kimi');
+  assert.equal(result.state.attempts, 1);
+  assert.equal(result.state.requiredKimiRequests, 4);
   for (let i = 0; i < 3; i += 1) {
     current = followUp(current);
     result = await round(engine, current);
@@ -119,6 +123,33 @@ test('a failed upstream probe returns to Kimi with exponential backoff', async (
   current = followUp(current);
   result = await round(engine, current);
   assert.equal(result.decision.provider, 'deepseek');
+});
+
+test('an unavailable probe does not consume quality attempts, then backs off', async () => {
+  const engine = createDecisionEngine(() => config({
+    minKimiRequests: 2, probeRequests: 1, windowRequests: 1, windowMs: 600_000,
+  }));
+  const messages = body();
+  await round(engine, messages);
+  await round(engine, messages);
+  const checkpoint = followUp(messages);
+
+  for (let i = 1; i <= 3; i += 1) {
+    const probe = await round(engine, checkpoint, 'upstream_5xx');
+    assert.equal(probe.decision.source, 'deescalation_probe');
+    const state = engine.routingState()[0];
+    assert.equal(state.attempts, 0, 'a 5xx is not evidence of DeepSeek task quality');
+    assert.equal(state.availabilityFailures, i);
+    assert.equal(state.phase, 'kimi');
+    assert.equal(state.requiredKimiRequests, i >= 3 ? 4 : 2);
+    for (let j = 0; j < state.requiredKimiRequests; j += 1) {
+      assert.equal((await round(engine, checkpoint)).decision.provider, 'kimi');
+    }
+  }
+  assert.equal(engine.routingState()[0].availabilityFailures, 3);
+  const next = await round(engine, checkpoint);
+  assert.equal(next.decision.provider, 'deepseek');
+  assert.equal(next.decision.source, 'deescalation_probe');
 });
 
 test('new tool failures relapse during a DeepSeek probe', async () => {
@@ -171,7 +202,7 @@ test('maximum failed attempts keep the task on Kimi when periodic retry is disab
   const messages = body();
   await round(engine, messages);
   const checkpoint = followUp(messages);
-  await round(engine, checkpoint, 'upstream_5xx');
+  await round(engine, checkpoint, 'upstream_4xx');
   await round(engine, checkpoint);
   const result = await round(engine, followUp(checkpoint));
   assert.equal(result.decision.provider, 'kimi');
@@ -259,7 +290,7 @@ test('exhausted normal attempts still have a bounded periodic retry exit', async
   const messages = body();
   await round(engine, messages);
   const checkpoint = followUp(messages);
-  await round(engine, checkpoint, 'upstream_5xx');
+  await round(engine, checkpoint, 'upstream_4xx');
   assert.equal((await round(engine, checkpoint)).decision.provider, 'kimi');
   const result = await round(engine, followUp(checkpoint));
   assert.equal(result.decision.provider, 'deepseek');

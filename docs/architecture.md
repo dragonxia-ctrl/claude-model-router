@@ -76,7 +76,7 @@ Benchmark text heuristics and semantic triage apply only to interactive streamin
 
 `src/decision-engine.mjs` owns two bounded in-memory maps:
 
-- bounded per-conversation provider/recovery state, capped at 2,000 conversation keys;
+- bounded per-task provider/recovery state keyed by `(conversationKey, taskKey)`, capped at 2,000 keys;
 - semantic decisions, capped at 1,000 task hashes.
 
 Both use insertion-order eviction. They disappear on restart; no conversation database is written to disk.
@@ -89,7 +89,7 @@ Resolution order:
 4. semantic triage for eligible unclassified tasks;
 5. DeepSeek fallback.
 
-`src/deescalation.mjs` defines recovery gates and capped exponential backoff. `src/progress.mjs` supplies a recent tool-activity window separate from cumulative escalation statistics. Probe outcomes are committed only after upstream completion: failed DeepSeek probes return to Kimi, while enough successful probes establish a recovered DeepSeek state. Hard capability requirements and explicit selections take precedence. Preview and token counting do not commit state.
+`src/deescalation.mjs` defines recovery gates, probe failure classes, relapse confirmation, and capped exponential backoff. `src/progress.mjs` supplies a recent tool-activity window separate from cumulative escalation statistics. Probe outcomes are committed only after upstream completion: failed DeepSeek probes return to Kimi with a class-specific response (availability failures do not consume the quality attempt budget), while enough successful probes establish a recovered DeepSeek state. `src/latency.mjs` keeps process-wide per-provider generation-speed and TTFB baselines; it only influences routing when the optional latency checkpoint is enabled. Hard capability requirements and explicit selections take precedence. Preview and token counting do not commit state.
 
 ### Semantic triage
 

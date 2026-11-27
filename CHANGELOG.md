@@ -4,7 +4,23 @@ All notable changes are documented here. The format follows Keep a Changelog and
 
 The version area with the problem analysis and measured evidence lives in [VERSIONS.md](VERSIONS.md).
 
-## [Unreleased]
+## [1.6.2] - 2026-11-27
+
+De-escalation correctness release. Existing configuration keys keep their defaults (new keys have defaults of their own); the correctness fixes below apply immediately, and the latency checkpoint is opt-in.
+
+### Added
+
+- **Per-task routing state.** Kimi residency and probe state are now keyed by `(conversationKey, taskKey)`. A second task in the same terminal session no longer overwrites the first task's state, so returning to the first task cannot produce a phantom Kimi → DeepSeek → Kimi pulse. `GET /v1/router/state` exposes one entry per task and the existing `conversationKey` field is preserved; manual de-escalation still addresses every task of a conversation. The last routed provider is also tracked per conversation, so a new DeepSeek task still strips the previous task's Kimi thinking signatures instead of sending invalid thinking blocks upstream.
+- **Probe failure classification.** Failed DeepSeek probes are now `unavailable` (408/425/429/5xx, connection/timeout/stream failure) or `invalid_request` (other 4xx). Availability failures no longer consume the quality attempt budget; three consecutive availability failures apply a separate capped backoff. A success resets the counter. A client abort still changes nothing.
+- **Relapse confirmation and backoff.** Failed verification and repeated normalized error groups relapse immediately. Trailing failures, failure-rate breaches, repeated mutations, and edits without a successful verification are soft evidence: they must be seen on `relapseConfirmations` consecutive reviews (default 2); the intermediate review reports `relapse_pending`. A failed probe or confirmed relapse now advances `attempts`, so relapses inherit exponential backoff instead of restarting a 4-request probe cycle. The same rule applies during a half-open probe. A failed probe and a newly started probe reset the pending confirmation streak, so evidence from one cycle cannot prematurely relapse the next.
+- **Minimum failure-rate denominator.** The recovery failure rate now uses `max(toolCalls, minFailureDenominator)` as its denominator and requires at least two failures, so one failure in a one- or two-call window is no longer treated as a rate breach.
+- **Latency measurement.** Completed main requests record `genMs` (duration minus TTFB), `tps` (output tokens per generation second), a per-provider smoothed speed and TTFB baseline, and `switchPrefillPenaltyMs` (the extra TTFB on a provider switch compared with the target provider's own baseline). New Prometheus families: `claude_router_output_tokens_per_second`, `claude_router_switch_prefill_penalty_seconds`, `claude_router_provider_switches_total`, `claude_router_probe_failures_total`, and `claude_router_relapses_total`.
+- **Optional latency checkpoint (off by default).** When `routing.deescalation.latencyCheckpoint.enabled` is true, sustained Kimi slowness against the DeepSeek baseline can open a `latency_window` recovery checkpoint. It requires residency, a clean window, a mechanical recent tool phase (reads/test runs), a minimum time since the last checkpoint, and a cooldown after returning to Kimi. A byte-identical DeepSeek task stays on DeepSeek after a clean probe; only serious or confirmed execution failures, a hard capability, or an operator request bring it back. See `docs/routing-policy.md`.
+
+### Changed
+
+- `route_decision` logs `latencyPressure`, `kimiTps`, and `deepseekTps`. `request_complete` logs `genMs`, `tps`, `switchPrefillPenaltyMs`, and `probeFailureClass`. `deescalation_probe_outcome` adds `failureClass`, `availabilityFailures`, `relapseStreak`, and blocking evidence. Routing state adds `relapseStreak`, `latencyCooldown`, `availabilityFailures`, `lastProbeFailure`, and `taskIndex`.
+- `routing.deescalation` accepts `relapseConfirmations`, `minFailureDenominator`, and a validated `latencyCheckpoint` block. `config/config.example.json`, the READMEs, and the routing/observability docs document the new keys.
 
 ### Documentation
 

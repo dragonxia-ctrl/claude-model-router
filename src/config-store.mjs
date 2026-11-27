@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { DEESCALATION_DEFAULTS } from './deescalation.mjs';
+import { DEESCALATION_DEFAULTS, LATENCY_CHECKPOINT_DEFAULTS } from './deescalation.mjs';
 
 export const ROUTING_DEFAULTS = Object.freeze({
   semanticTriage: true,
@@ -46,13 +46,29 @@ export function normalizeConfig(raw) {
       assert(routing.deescalation && typeof routing.deescalation === 'object' && !Array.isArray(routing.deescalation), 'routing.deescalation must be an object');
       const policy = routing.deescalation;
       if (policy.enabled !== undefined) assert(typeof policy.enabled === 'boolean', 'routing.deescalation.enabled must be a boolean');
-      for (const key of ['minKimiRequests', 'probeRequests', 'maxAttempts', 'maxBackoffRequests', 'windowToolCalls', 'windowRequests', 'windowMs', 'retryAfterExhaustedRequests', 'minRecentToolCalls', 'maxMutationRepeats']) {
+      for (const key of ['minKimiRequests', 'probeRequests', 'maxAttempts', 'maxBackoffRequests', 'windowToolCalls', 'windowRequests', 'windowMs', 'retryAfterExhaustedRequests', 'minRecentToolCalls', 'maxMutationRepeats', 'relapseConfirmations', 'minFailureDenominator']) {
         if (policy[key] !== undefined) assert(Number.isInteger(policy[key]) && policy[key] >= 0, `routing.deescalation.${key} must be a non-negative integer`);
       }
-      for (const key of ['minKimiRequests', 'probeRequests', 'maxBackoffRequests', 'windowToolCalls', 'windowRequests', 'windowMs', 'maxMutationRepeats']) {
+      for (const key of ['minKimiRequests', 'probeRequests', 'maxBackoffRequests', 'windowToolCalls', 'windowRequests', 'windowMs', 'maxMutationRepeats', 'relapseConfirmations', 'minFailureDenominator']) {
         if (policy[key] !== undefined) assert(policy[key] >= 1, `routing.deescalation.${key} must be at least 1`);
       }
       if (policy.maxFailureRate !== undefined) assert(typeof policy.maxFailureRate === 'number' && policy.maxFailureRate >= 0 && policy.maxFailureRate <= 1, 'routing.deescalation.maxFailureRate must be between 0 and 1');
+      if (policy.latencyCheckpoint !== undefined) {
+        assert(policy.latencyCheckpoint && typeof policy.latencyCheckpoint === 'object' && !Array.isArray(policy.latencyCheckpoint), 'routing.deescalation.latencyCheckpoint must be an object');
+        const latency = policy.latencyCheckpoint;
+        if (latency.enabled !== undefined) assert(typeof latency.enabled === 'boolean', 'routing.deescalation.latencyCheckpoint.enabled must be a boolean');
+        for (const key of ['samples', 'fastWindowMs', 'cooldownRequests', 'minOutputTokens', 'minBaselineSamples']) {
+          if (latency[key] !== undefined) assert(Number.isInteger(latency[key]) && latency[key] >= 0, `routing.deescalation.latencyCheckpoint.${key} must be a non-negative integer`);
+        }
+        for (const key of ['samples', 'fastWindowMs', 'minOutputTokens', 'minBaselineSamples']) {
+          if (latency[key] !== undefined) assert(latency[key] >= 1, `routing.deescalation.latencyCheckpoint.${key} must be at least 1`);
+        }
+        for (const key of ['enterRatio', 'exitRatio', 'minReadOnlyShare', 'emaAlpha']) {
+          if (latency[key] !== undefined) assert(typeof latency[key] === 'number' && latency[key] >= 0 && latency[key] <= 1, `routing.deescalation.latencyCheckpoint.${key} must be between 0 and 1`);
+        }
+        const mergedLatency = { ...LATENCY_CHECKPOINT_DEFAULTS, ...latency };
+        assert(mergedLatency.enterRatio < mergedLatency.exitRatio, 'routing.deescalation.latencyCheckpoint.enterRatio must be less than exitRatio');
+      }
       const merged = { ...DEESCALATION_DEFAULTS, ...policy };
       assert(merged.maxBackoffRequests >= merged.minKimiRequests, 'routing.deescalation.maxBackoffRequests must be at least minKimiRequests');
       assert(merged.minRecentToolCalls <= merged.windowToolCalls, 'routing.deescalation.minRecentToolCalls must not exceed windowToolCalls');

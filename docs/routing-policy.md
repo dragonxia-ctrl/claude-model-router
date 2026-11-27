@@ -70,12 +70,17 @@ Kimi is sticky **within a tool-use loop**, but not for the lifetime of a task. P
 ```text
 DeepSeek -- evidence of Kimi advantage --> Kimi
 Kimi -- minimum residency + clean window + recovery checkpoint --> DeepSeek probe
-DeepSeek probe -- required successful requests --> recovered DeepSeek
-DeepSeek probe -- upstream failure or new tool failures --> Kimi + exponential backoff
-Recovered DeepSeek -- new failures/hard capability --> Kimi
+DeepSeek probe -- required successful requests + clean window --> recovered DeepSeek
+DeepSeek probe -- serious failure, or confirmed soft failure --> Kimi + backoff
+DeepSeek probe -- transient upstream failure --> Kimi without consuming a quality attempt
+Recovered DeepSeek -- serious failure, or confirmed soft failure --> Kimi + backoff
 ```
 
+Kimi state is kept per `(conversationKey, taskKey)`, not per conversation. Several tasks can interleave in one terminal session; sharing one state let a second task overwrite the first task's residence and probe flags, producing phantom Kimi → DeepSeek → Kimi pulses.
+
 A checkpoint is a new human text message or a **mid-turn review**: while a task is on Kimi, the same recovery window is evaluated on three independent clocks — after `windowToolCalls` (12) new tool calls, after `windowRequests` (6) Kimi requests, or after `windowMs` (300 000 ms) have elapsed since the last review — provided the request-based residency has been served. Tool-result-only `user` messages still do not create checkpoints by themselves; the mid-turn reviews are what let a single long turn leave Kimi once its execution has recovered. A blocked review resets every clock, so the next opportunity is one interval later. Preview and token-count requests never advance routing state.
+
+When the optional latency clock is enabled (see below), a fourth checkpoint kind, `latency_window`, can open under provider-speed pressure. It is off by default.
 
 The clocks are independent on purpose: a turn that makes few tool calls (mostly reading model output, or waiting on long-running commands) used to have no exit at all, because the only mid-turn clock counted tool calls. Measured on this installation's log, 33 of 38 sticky runs never reached 24 *new* tool calls, and the longest stayed on Kimi for 51 requests and 27.7 minutes; 63 of the 68 checkpoint opportunities under the new rules come from the request clock (see [v4 → v5](versions/v4-to-v5.md)).
 
@@ -89,22 +94,48 @@ All applicable conditions must hold:
 - the task has no hard Kimi-only capability requirement (currently an actual video media block);
 - the configured number of actual Kimi requests has completed;
 - failed-probe attempts remain below `maxAttempts`, or `retryAfterExhaustedRequests` Kimi requests have elapsed since the last failed probe;
-- a checkpoint occurred: a new human message, `windowToolCalls` new tool calls, `windowRequests` Kimi requests, or `windowMs` elapsed since the last review;
+- a checkpoint occurred: a new human message, `windowToolCalls` new tool calls, `windowRequests` Kimi requests, `windowMs` elapsed since the last review, or (when enabled) `latency_window`;
 - the recent recovery window is clean.
 
-A clean window has no failed verification, repeated normalized error group, trailing tool failure, or excessive repeated mutation; its failure rate is within budget. If recent edits have verification attempts, at least one must succeed. When tools are present, `minRecentToolCalls` requires enough recent evidence; a conversation with no tool calls can still recover after the request-based residency requirement.
+A clean window has no failed verification, repeated normalized error group, trailing tool failure, or excessive repeated mutation; its failure rate is within budget. The rate needs at least `minFailureDenominator` calls in the denominator and at least two actual failures, so one failure in a one- or two-call window cannot block recovery. If recent edits have verification attempts, at least one must succeed. When tools are present, `minRecentToolCalls` requires enough recent evidence; a conversation with no tool calls can still recover after the request-based residency requirement.
 
 Cumulative failure statistics still justify the original escalation, but do **not** permanently block de-escalation. Only the recent window decides whether execution has recovered.
 
 ### Failure and backoff
 
-A non-successful upstream probe response (except a client abort), a failed verification, repeated errors, trailing failures, or other new unhealthy evidence returns the task to Kimi. The next residency requirement is:
+Probe failures are classified before they affect state:
+
+- **availability** — HTTP 408/425/429/5xx, connection/timeout, or stream failure. A transient outage says nothing about DeepSeek's task quality, so it does **not** consume a `maxAttempts` slot. The first two only require normal residency; from the third consecutive availability failure, the residency follows `minKimiRequests × 2^(n−2)` up to `maxBackoffRequests`. Any success resets the counter.
+- **invalid request** — other 4xx responses, typically the old malformed-probe 400. This is not availability and not task quality, but it consumes one bounded retry attempt so a persistent configuration bug stops probing instead of retrying forever.
+- **execution evidence** — a failed verification or a repeated error group relapses immediately. Trailing failures, failure-rate breaches, repeated mutations, and edits without a successful verification are *soft*: they must be seen on `relapseConfirmations` consecutive reviews (default 2) before the task returns to Kimi. A `relapse_pending` review keeps the task on DeepSeek and records the streak. A failed probe or a newly started probe cycle resets that streak, so one cycle's pending evidence cannot relapse the next cycle early.
+
+A client abort does not change the probe state.
+
+An invalid-request probe failure or a confirmed execution relapse returns the task to Kimi with:
 
 ```text
 min(maxBackoffRequests, minKimiRequests × 2^attempts)
 ```
 
-This is multiplicative backoff with a hard cap. After `maxAttempts` failed probes the normal backoff cycle ends, but Kimi is not locked permanently: once `retryAfterExhaustedRequests` (16) Kimi requests have passed, the next clean checkpoint may start a new probe cycle. Set `retryAfterExhaustedRequests: 0` to restore the previous "stop probing after `maxAttempts`" behaviour. A new task or an explicit selection resets the state. State is in memory and disappears on router restart.
+This is multiplicative backoff with a hard cap. An invalid-request probe failure and a confirmed relapse both advance `attempts`; the old behaviour reset it to zero on relapse and could produce a 4-request cycle indefinitely. Availability failures use their separate counter instead (see above). After `maxAttempts` failed probes the normal backoff cycle ends, but Kimi is not locked permanently: once `retryAfterExhaustedRequests` (16) Kimi requests have passed, the next clean checkpoint may start a new probe cycle. Set `retryAfterExhaustedRequests: 0` to restore the previous "stop probing after `maxAttempts`" behaviour. A new task or an explicit selection resets the state. State is in memory and disappears on router restart.
+
+### Optional latency-aware review
+
+Kimi's average time per output token is much higher than DeepSeek's. During a long Kimi session the router can therefore treat sustained Kimi slowness as one more recovery checkpoint, switch a mechanical phase to the faster provider, and let the ordinary clean-window evaluation decide whether to stay there.
+
+The feature is **disabled by default** because a provider switch discards the other provider's prompt cache and can reduce answer quality on design-heavy work. It is configured under `routing.deescalation.latencyCheckpoint`:
+
+- `enabled` (default `false`) — opt in.
+- `enterRatio` / `exitRatio` (default `0.6` / `0.8`) — Kimi is slow when its tokens/second is below `enterRatio ×` the DeepSeek baseline; pressure clears only above `exitRatio ×`. The gap is hysteresis.
+- `samples` (default `3`) — consecutive Kimi samples below the entry ratio before pressure is asserted.
+- `minBaselineSamples` (default `3`) — samples needed from both providers before a ratio is trusted.
+- `fastWindowMs` (default `90000`) — minimum time since the previous checkpoint, so speed alone cannot churn the route on every request.
+- `cooldownRequests` (default `8`) — Kimi requests skipped after a failed probe or relapse before a latency checkpoint can open again.
+- `minReadOnlyShare` (default `0.5`) — at least this share of the recent tool window must be reads or test runs. A turn with no tool calls never qualifies: without tool evidence the router cannot tell a mechanical phase from design work.
+- `minOutputTokens` (default `20`) — responses below this are too short for a meaningful tokens/second sample.
+- `emaAlpha` (default `0.2`) — smoothing factor for the per-provider speed and TTFB baselines.
+
+Speed is measured as `output_tokens ÷ (durationMs − ttfbMs)` and smoothed per provider (the tracker is shared across conversations). The checkpoint still requires residency, a clean window, and all the ordinary gates. After a successful probe the task stays on DeepSeek; only serious or confirmed execution failures, a hard capability, or an operator request bring it back to Kimi. The router also records `switchPrefillPenaltyMs`, the extra time to first byte on a provider switch compared with that provider's own baseline.
 
 ### Defaults
 
@@ -121,7 +152,10 @@ This is multiplicative backoff with a hard cap. After `maxAttempts` failed probe
 | `retryAfterExhaustedRequests` | `16` | Kimi requests after which an exhausted state may probe again (`0` disables) |
 | `minRecentToolCalls` | `4` | Minimum evidence when the recent window contains tools |
 | `maxFailureRate` | `0.1` | Maximum recent failed-results/tool-calls ratio |
+| `minFailureDenominator` | `10` | Minimum denominator used for the recent failure rate; two failures are also required |
+| `relapseConfirmations` | `2` | Consecutive reviews of soft failure evidence before returning to Kimi |
 | `maxMutationRepeats` | `2` | Maximum repetitions of one mutation in a clean window |
+| `latencyCheckpoint.enabled` | `false` | Optional speed-pressure recovery checkpoint (see above) |
 
 Set `enabled: false` to restore permanent same-task Kimi stickiness. Explicit provider selection always wins for that request.
 
@@ -131,8 +165,8 @@ Two authenticated loopback endpoints expose the in-memory state machine and prov
 
 | Endpoint | Purpose |
 | --- | --- |
-| `GET /v1/router/state` | Residency and probe state per conversation: provider, phase, `kimiRequests`/`requiredKimiRequests`, attempts, probe successes, checkpoint baselines, and whether a manual checkpoint is pending |
-| `POST /v1/router/deescalate` | `{"conversationKey":"…"}` or `{"all":true}` — schedule a recovery checkpoint for the next main request |
+| `GET /v1/router/state` | Residency and probe state per task: `conversationKey`, `taskKey`, provider, phase, `kimiRequests`/`requiredKimiRequests`, attempts, probe successes, `relapseStreak`, availability failures, last probe failure, latency cooldown, checkpoint baselines, and whether a manual checkpoint is pending |
+| `POST /v1/router/deescalate` | `{"conversationKey":"…"}` or `{"all":true}` — schedule a recovery checkpoint for every active task of that conversation (or all conversations); the response lists unique conversation keys |
 
 ```bash
 claude-router state
