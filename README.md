@@ -12,7 +12,7 @@ A local, safety-first routing proxy for **Claude Code**. It keeps DeepSeek as th
 >
 > This is an independent community project. It is not affiliated with or endorsed by Anthropic, DeepSeek, or Moonshot AI. Claude Code is a product of Anthropic.
 
-**Version information:** [CHANGELOG.md](CHANGELOG.md) — what each release changed. Current release: **v1.6.1**. The measurement log through 1.2.0 remains in [VERSIONS.md](VERSIONS.md).
+**Version information:** [CHANGELOG.md](CHANGELOG.md) — what each release changed. Current release: **v1.6.2**. The measurement log through 1.2.0 remains in [VERSIONS.md](VERSIONS.md).
 
 ---
 
@@ -137,7 +137,8 @@ the same router process and are not on the request path.
 | `src/task-text.mjs` | Task extraction and follow-up inheritance |
 | `src/progress.mjs` | Read-only vs mutating tool analysis, failed verification detection, repeated errors |
 | `src/decision-engine.mjs` | Bounded Kimi residency, recovery checkpoints/probes, semantic-triage cache |
-| `src/deescalation.mjs` | Clean-window gates and capped exponential probe backoff |
+| `src/deescalation.mjs` | Clean-window gates, probe failure classes, relapse confirmation, and capped exponential probe backoff |
+| `src/latency.mjs` | Optional provider-speed measurement and latency-pressure state |
 | `src/semantic.mjs` | One low-cost DeepSeek classification call with thinking disabled |
 | `src/sanitize.mjs` | Thinking cleanup; guarantees a DeepSeek thinking block on every assistant turn |
 | `src/upstream.mjs` | Streaming passthrough, auth headers, cancellation |
@@ -432,7 +433,12 @@ The active config lives at `~/.claude/model-router/config.json` and is never com
       "windowToolCalls": 12,
       "windowRequests": 6,
       "windowMs": 300000,
-      "retryAfterExhaustedRequests": 16
+      "retryAfterExhaustedRequests": 16,
+      "minFailureDenominator": 10,
+      "relapseConfirmations": 2,
+      "latencyCheckpoint": {
+        "enabled": false
+      }
     }
   },
   "telemetry": {
@@ -453,7 +459,7 @@ The active config lives at `~/.claude/model-router/config.json` and is never com
 | `routing.triageConfidence` | Minimum confidence needed to choose Kimi |
 | `routing.triageTimeoutMs` | Timeout for the classifier |
 | `routing.triageMaxInputChars` | Maximum task characters sent to the classifier |
-| `routing.deescalation` | Bounded Kimi residency, recovery probes, and backoff; see [routing policy](docs/routing-policy.md) |
+| `routing.deescalation` | Bounded Kimi residency, recovery probes, backoff, and the optional latency checkpoint (off by default); see [routing policy](docs/routing-policy.md) |
 | `updates` | Optional automatic installation of published releases (`auto`), the source checkout (`source`), and the launchd label (`launchdLabel`); see [Updating from GitHub](#updating-from-github) |
 | `telemetry` | Optional private JSONL persistence, retention, and rotation; see [observability](docs/observability.md) |
 
@@ -564,12 +570,12 @@ The same setting can point at `status-line.mjs` instead, which puts the model ac
 }
 ```
 
-It reads `session_id` from the JSON Claude Code passes on stdin and renders `● Kimi 12s  ███…  router v1.6.1 · latest v1.6.1`: the model serving the current request, an 80-second sample of DeepSeek (blue) and Kimi (amber) traffic, and the same release states listed below. The strip shows only this terminal's activity when the router log carries session tags (Claude Code requests always do; older logs render the global view). `CLAUDE_ROUTER_CELLS` and `CLAUDE_ROUTER_CELL_MS` widen the sample. `claude-router update` deploys the strip with the runtime (`src/status-line.mjs`, `src/activity.mjs`, and `src/session.mjs`).
+It reads `session_id` from the JSON Claude Code passes on stdin and renders `● Kimi 12s  ███…  router v1.6.2 · latest v1.6.2`: the model serving the current request, an 80-second sample of DeepSeek (blue) and Kimi (amber) traffic, and the same release states listed below. The strip shows only this terminal's activity when the router log carries session tags (Claude Code requests always do; older logs render the global view). `CLAUDE_ROUTER_CELLS` and `CLAUDE_ROUTER_CELL_MS` widen the sample. `claude-router update` deploys the strip with the runtime (`src/status-line.mjs`, `src/activity.mjs`, and `src/session.mjs`).
 
 The status line uses local files only on the render path and shows:
 
-- `router v1.6.1 · latest v1.6.1` dimmed when the running release is current.
-- An amber `router v1.6.1 · v1.6.2 available` when a newer release exists. With automatic updates on, it appends `· auto-update on`, `· auto-update running`, or `· auto-update failed`.
+- `router v1.6.2 · latest v1.6.2` dimmed when the running release is current.
+- An amber `router v1.6.2 · v1.6.3 available` when a newer release exists. With automatic updates on, it appends `· auto-update on`, `· auto-update running`, or `· auto-update failed`.
 - An amber `router v1.3.0 · update installed, restart to update` when the deployed `version.mjs` is newer than the running process.
 
 When the cached check is older than ten minutes, the helper starts a detached, throttled `--refresh` child; that child asks GitHub once and updates the cache, so a new release appears even if the router predates it and was never restarted. The child is silent on failure and several Claude Code windows share one refresh slot. No provider tokens are used, and there is no output when the router has never reported a version. Outside Claude Code, `claude-router version` prints the same release information and the automatic-update switch.

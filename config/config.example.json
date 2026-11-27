@@ -34,7 +34,20 @@
       "retryAfterExhaustedRequests": 16,
       "minRecentToolCalls": 4,
       "maxFailureRate": 0.1,
-      "maxMutationRepeats": 2
+      "minFailureDenominator": 10,
+      "relapseConfirmations": 2,
+      "maxMutationRepeats": 2,
+      "latencyCheckpoint": {
+        "enabled": false,
+        "enterRatio": 0.6,
+        "exitRatio": 0.8,
+        "samples": 3,
+        "fastWindowMs": 90000,
+        "cooldownRequests": 8,
+        "minReadOnlyShare": 0.5,
+        "minOutputTokens": 20,
+        "minBaselineSamples": 3
+      }
     }
   },
   "telemetry": {

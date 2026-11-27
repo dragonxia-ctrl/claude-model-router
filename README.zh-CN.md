@@ -12,7 +12,7 @@
 >
 > 本项目是独立的社区项目，与 Anthropic、DeepSeek、Moonshot AI（月之暗面）均无任何隶属关系，也未获得其官方背书。Claude Code 是 Anthropic 的产品。
 
-**版本信息：** [CHANGELOG.md](CHANGELOG.md) 记录每个版本的改动。当前版本：**v1.6.1**；截至 1.2.0 的实测记录仍保留在 [VERSIONS.md](VERSIONS.md)（英文）。
+**版本信息：** [CHANGELOG.md](CHANGELOG.md) 记录每个版本的改动。当前版本：**v1.6.2**；截至 1.2.0 的实测记录仍保留在 [VERSIONS.md](VERSIONS.md)（英文）。
 
 ---
 
@@ -133,7 +133,8 @@ flowchart LR
 | `src/task-text.mjs` | 提取主任务文本、短追问继承 |
 | `src/progress.mjs` | 区分只读/修改工具，识别失败验证、重复错误等信号 |
 | `src/decision-engine.mjs` | 有界 Kimi 驻留、恢复检查点/探针、语义缓存 |
-| `src/deescalation.mjs` | 干净恢复窗口与有上限的指数退避 |
+| `src/deescalation.mjs` | 干净恢复窗口、探针失败分类、恢复确认与有上限的指数退避 |
+| `src/latency.mjs` | 可选的供应商速度测量与延迟压力状态 |
 | `src/semantic.mjs` | 单次 DeepSeek 低成本分类，关闭 thinking |
 | `src/sanitize.mjs` | 清理 thinking；为每个 DeepSeek assistant 回合补齐 thinking 块 |
 | `src/upstream.mjs` | SSE 流式透传、鉴权头、取消请求 |
@@ -428,7 +429,12 @@ node bin/claude-router.mjs verify
       "windowToolCalls": 12,
       "windowRequests": 6,
       "windowMs": 300000,
-      "retryAfterExhaustedRequests": 16
+      "retryAfterExhaustedRequests": 16,
+      "minFailureDenominator": 10,
+      "relapseConfirmations": 2,
+      "latencyCheckpoint": {
+        "enabled": false
+      }
     }
   },
   "telemetry": {
@@ -449,7 +455,7 @@ node bin/claude-router.mjs verify
 | `routing.triageConfidence` | 选择 Kimi 所需的最低置信度 |
 | `routing.triageTimeoutMs` | 分类器超时 |
 | `routing.triageMaxInputChars` | 发送给分类器的最大任务字符数 |
-| `routing.deescalation` | 有界 Kimi 驻留、恢复探针与退避；详见[路由策略](docs/routing-policy.md) |
+| `routing.deescalation` | 有界 Kimi 驻留、恢复探针、退避与可选的延迟检查点（默认关闭）；详见[路由策略](docs/routing-policy.md) |
 | `updates` | 可选：自动安装已发布版本（`auto`）、源码 checkout（`source`）与 launchd 标签（`launchdLabel`）；见[从 GitHub 更新](#从-github-更新) |
 | `telemetry` | 可选私有 JSONL 持久化、保留与轮转；详见[可观测性](docs/observability.md) |
 
@@ -560,12 +566,12 @@ claude-router update --auto        # 查看开关、最近一次尝试及其错�
 }
 ```
 
-它从 Claude Code 通过 stdin 传入的 JSON 读取 `session_id`，显示成 `● Kimi 12s  ███…  router v1.6.1 · latest v1.6.1`：当前处理请求的模型、最近 80 秒的 DeepSeek（蓝色）/Kimi（琥珀色）流量，以及下面同样的版本状态。当 router 日志带有会话标记时，只显示本终端的活动（Claude Code 请求现在总会带标记；旧日志则显示全局视图）。`CLAUDE_ROUTER_CELLS` 和 `CLAUDE_ROUTER_CELL_MS` 可以调整采样窗口。`claude-router update` 会把活动条和运行时一起部署（`src/status-line.mjs`、`src/activity.mjs`、`src/session.mjs`）。
+它从 Claude Code 通过 stdin 传入的 JSON 读取 `session_id`，显示成 `● Kimi 12s  ███…  router v1.6.2 · latest v1.6.2`：当前处理请求的模型、最近 80 秒的 DeepSeek（蓝色）/Kimi（琥珀色）流量，以及下面同样的版本状态。当 router 日志带有会话标记时，只显示本终端的活动（Claude Code 请求现在总会带标记；旧日志则显示全局视图）。`CLAUDE_ROUTER_CELLS` 和 `CLAUDE_ROUTER_CELL_MS` 可以调整采样窗口。`claude-router update` 会把活动条和运行时一起部署（`src/status-line.mjs`、`src/activity.mjs`、`src/session.mjs`）。
 
 状态栏的渲染路径只读本地文件，显示规则：
 
-- 运行版本已是最新时，暗色显示 `router v1.6.1 · latest v1.6.1`。
-- 有新版本时，琥珀色显示 `router v1.6.1 · v1.6.2 available`；开启自动更新后追加 `· auto-update on`、`· auto-update running` 或 `· auto-update failed`。
+- 运行版本已是最新时，暗色显示 `router v1.6.2 · latest v1.6.2`。
+- 有新版本时，琥珀色显示 `router v1.6.2 · v1.6.3 available`；开启自动更新后追加 `· auto-update on`、`· auto-update running` 或 `· auto-update failed`。
 - 部署的 `version.mjs` 比运行进程更新时，琥珀色显示 `router v1.3.0 · update installed, restart to update`。
 
 当缓存的检查结果超过十分钟时，脚本会启动一个带节流的独立 `--refresh` 子进程向 GitHub 查询一次并更新缓存；因此即使 router 从未重启，新版本也会及时显示。失败时静默，多个 Claude Code 窗口共用一个刷新名额。不使用供应商 token；router 从未上报版本时不输出任何内容。在 Claude Code 之外，`claude-router version` 会打印相同的版本信息和自动更新开关。

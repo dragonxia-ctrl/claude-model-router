@@ -30,7 +30,8 @@ Telemetry is enabled in memory by default. It records:
 
 - request count, outcome, duration, upstream time to first byte, and response bytes;
 - actual reported input, output, cache-read, and cache-creation tokens;
-- route provider/source, escalations, and de-escalation outcomes;
+- generation speed (`genMs`, `tps`), and the TTFB penalty when a request switches providers;
+- route provider/source, provider switches, escalations, relapses, and de-escalation outcomes (including the probe failure class);
 - semantic-triage usage separately from main requests;
 - persistence write/drop/error counts.
 
@@ -48,8 +49,13 @@ Important metric families:
 - `claude_router_upstream_ttfb_seconds`
 - `claude_router_tokens_total{provider,model,type}`
 - `claude_router_route_decisions_total{provider,source,purpose}`
+- `claude_router_provider_switches_total{from_provider,to_provider,source}`
 - `claude_router_escalations_total{from_provider,to_provider,source}`
 - `claude_router_deescalation_total{outcome}`
+- `claude_router_probe_failures_total{failure_class}` (`unavailable` or `invalid_request`)
+- `claude_router_relapses_total{outcome}`
+- `claude_router_output_tokens_per_second{provider,model,purpose}`
+- `claude_router_switch_prefill_penalty_seconds{provider,model}`
 - `claude_router_telemetry_dropped_records_total`
 
 In-memory counters reset on restart. The usage tap reads provider-reported usage from JSON or SSE while forwarding every response byte unchanged.
@@ -67,17 +73,20 @@ Each routed request writes one `route_decision` JSON line to `router.log`:
 | `conversationKey`, `taskKey` | Pseudonymous session/task identifiers for replay and correlation |
 | `session` | A 16-hex hash of the Claude Code session uuid, taken from the `x-claude-code-session-id` header or `metadata.user_id`. `null` when the client sends neither. The uuid and device id are never logged; the status line uses this to show one terminal's activity |
 | `capabilityKinds`, `hardCapability`, `media` | Which benchmark/capability rules fired, whether any of them blocks de-escalation, and which media block kinds were actually present (`video`, `image`) |
-| `deescalationOutcome` | Probe, relapse, blocked-window, or capability-block outcome |
-| `deescalationCheckpoint` | Which checkpoint opened this review: `user`, `tool_window`, `request_window`, `idle_window`, `manual`, or `null` |
+| `deescalationOutcome` | Probe, relapse, relapse-pending, blocked-window, or capability-block outcome |
+| `deescalationCheckpoint` | Which checkpoint opened this review: `user`, `tool_window`, `request_window`, `idle_window`, `latency_window` (only when enabled), `manual`, or `null` |
 | `kimiRequests`, `requiredKimiRequests` | Kimi requests served in the current residency, and the residency still required before a probe |
+| `latencyPressure`, `kimiTps`, `deepseekTps` | Whether the optional latency clock is currently under pressure, and the smoothed provider tokens/second baselines |
 
-Each failed or successful DeepSeek probe also writes a `deescalation_probe_outcome` line with `outcome`, `httpStatus`, `errorKind`, `attempts`, and `requiredKimiRequests`, so probe failures are attributable without recording response bodies.
+Each failed or successful DeepSeek probe also writes a `deescalation_probe_outcome` line with `outcome`, `httpStatus`, `errorKind`, `failureClass`, `attempts`, `requiredKimiRequests`, `availabilityFailures`, `relapseStreak`, and any blocking evidence, so probe failures are attributable without recording response bodies.
+
+Each completed request writes a `request_complete` line with `genMs` (duration minus TTFB), `tps` (output tokens per generation second), `switchPrefillPenaltyMs` (TTFB above the target provider's own baseline after a switch), and `probeFailureClass` when a probe failed. These are the inputs used by the optional latency checkpoint and remain numeric metadata only.
 
 ### Routing-state control endpoints
 
 | Endpoint | Authentication | Purpose |
 | --- | --- | --- |
-| `GET /v1/router/state` | Local bearer token | In-memory residency/probe state per conversation (no task text) |
+| `GET /v1/router/state` | Local bearer token | In-memory residency/probe state per `(conversationKey, taskKey)` task (no task text) |
 | `POST /v1/router/deescalate` | Local bearer token | Schedule a recovery checkpoint (`conversationKey`, or `all: true`) |
 
 Both require the local bearer token and are intended for the loopback/private interface only; they are not part of the Anthropic-compatible API surface.
@@ -109,8 +118,8 @@ Files are named `requests-YYYY-MM-DD[-n].jsonl`, created with owner-only permiss
 
 ```json
 {
-  "current": "1.6.1",
-  "latest": "v1.6.1",
+  "current": "1.6.2",
+  "latest": "v1.6.2",
   "status": "current",
   "updateAvailable": false,
   "checkedAt": "2026-11-26T13:50:00.000Z",
@@ -138,7 +147,7 @@ The router checks the public GitHub `releases/latest` endpoint of its own reposi
 }
 ```
 
-It prints `router v1.6.1 · latest v1.6.1` dimmed, `router v1.6.1 · v1.6.2 available` in amber when an upgrade exists, and `router v1.6.1 · update installed, restart to update` in amber when the deployed `version.mjs` is newer than the running process. With automatic updates on, an upgrade notice ends with `· auto-update on`, `· auto-update running`, or `· auto-update failed`. It prints nothing when the router has never written a version cache.
+It prints `router v1.6.2 · latest v1.6.2` dimmed, `router v1.6.2 · v1.6.3 available` in amber when an upgrade exists, and `router v1.6.2 · update installed, restart to update` in amber when the deployed `version.mjs` is newer than the running process. With automatic updates on, an upgrade notice ends with `· auto-update on`, `· auto-update running`, or `· auto-update failed`. It prints nothing when the router has never written a version cache.
 
 The render reads only local files, so it is safe on every status line refresh. When the cached check is older than ten minutes, it starts a detached `--refresh` child that performs one GitHub lookup and updates the cache; a stamp file limits the whole machine to one attempt every two minutes, so several Claude Code windows share a single refresh. The child is silent on failure. Mods such as the usage probe run in a sandbox without `fetch`, `process`, or filesystem access, which is why version visibility uses the status line rather than the turn footer.
 

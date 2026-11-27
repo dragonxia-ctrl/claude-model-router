@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createConfigStore, loadConfig } from '../src/config-store.mjs';
+import { deescalationSettings } from '../src/deescalation.mjs';
 
 const valid = () => ({
   router: { host: '127.0.0.1', port: 17861, token: 'a'.repeat(64) },
@@ -88,6 +89,46 @@ test('de-escalation policy validates ranges and backoff consistency', t => {
   next.routing.deescalation.retryAfterExhaustedRequests = 0;
   fs.writeFileSync(file, JSON.stringify(next));
   assert.equal(loadConfig(file).routing.deescalation.retryAfterExhaustedRequests, 0);
+});
+
+test('relapse confirmation and the latency checkpoint are validated and merged', t => {
+  const file = fixture(t);
+  const next = valid();
+  next.routing = {
+    deescalation: {
+      relapseConfirmations: 3,
+      minFailureDenominator: 8,
+      latencyCheckpoint: { enabled: true, enterRatio: 0.5, exitRatio: 0.7, samples: 2 },
+    },
+  };
+  fs.writeFileSync(file, JSON.stringify(next));
+  const merged = deescalationSettings(loadConfig(file));
+  assert.equal(merged.relapseConfirmations, 3);
+  assert.equal(merged.minFailureDenominator, 8);
+  assert.equal(merged.latencyCheckpoint.enabled, true);
+  assert.equal(merged.latencyCheckpoint.exitRatio, 0.7);
+  assert.equal(merged.latencyCheckpoint.fastWindowMs, 90_000, 'unspecified nested keys keep defaults');
+
+  next.routing.deescalation.latencyCheckpoint = { enterRatio: 0.9, exitRatio: 0.8 };
+  fs.writeFileSync(file, JSON.stringify(next));
+  assert.throws(() => loadConfig(file), /enterRatio/);
+
+  next.routing.deescalation.latencyCheckpoint = { enabled: true, samples: 0 };
+  fs.writeFileSync(file, JSON.stringify(next));
+  assert.throws(() => loadConfig(file), /samples/);
+
+  next.routing.deescalation.latencyCheckpoint = { enabled: true, minReadOnlyShare: 1.5 };
+  fs.writeFileSync(file, JSON.stringify(next));
+  assert.throws(() => loadConfig(file), /minReadOnlyShare/);
+
+  next.routing.deescalation.latencyCheckpoint = [];
+  fs.writeFileSync(file, JSON.stringify(next));
+  assert.throws(() => loadConfig(file), /latencyCheckpoint must be an object/);
+
+  next.routing.deescalation.latencyCheckpoint = { enabled: false };
+  next.routing.deescalation.relapseConfirmations = 0;
+  fs.writeFileSync(file, JSON.stringify(next));
+  assert.throws(() => loadConfig(file), /relapseConfirmations/);
 });
 
 test('missing providers and short tokens are rejected', t => {

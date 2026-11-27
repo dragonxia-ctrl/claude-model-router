@@ -192,6 +192,8 @@ export function analyzeRecoveryWindow(messages, startIndex, windowToolCalls = 24
   const recent = events.slice(firstIndex);
 
   let toolCalls = 0;
+  let readOnlyCalls = 0;
+  let mutatingCalls = 0;
   let failedResults = 0;
   let failedVerifications = 0;
   let successfulVerifications = 0;
@@ -204,8 +206,10 @@ export function analyzeRecoveryWindow(messages, startIndex, windowToolCalls = 24
   for (const event of recent) {
     if (event.type === 'use') {
       toolCalls += 1;
+      if (event.kind === 'read') readOnlyCalls += 1;
       if (event.kind === 'verification') verificationCalls += 1;
       if (event.kind === 'mutating') {
+        mutatingCalls += 1;
         mutationCounts.set(event.signature, (mutationCounts.get(event.signature) || 0) + 1);
       }
       continue;
@@ -225,6 +229,8 @@ export function analyzeRecoveryWindow(messages, startIndex, windowToolCalls = 24
 
   return {
     toolCalls,
+    readOnlyCalls,
+    mutatingCalls,
     failedResults,
     failedVerifications,
     successfulVerifications,

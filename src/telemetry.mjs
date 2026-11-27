@@ -3,6 +3,7 @@ import path from 'node:path';
 import { createHmac, randomBytes } from 'node:crypto';
 
 export const HISTOGRAM_BUCKETS_SECONDS = [0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 20, 30, 60, 120];
+export const HISTOGRAM_BUCKETS_TOKENS_PER_SECOND = [1, 2, 5, 10, 20, 30, 50, 80, 120, 200, 400, 800];
 
 const DEFAULTS = Object.freeze({
   enabled: true,
@@ -71,23 +72,24 @@ export function createTelemetry(options = {}) {
     else counters.set(key, { name, labels: Object.fromEntries(sortedLabels(labels)), value });
   }
 
-  function observe(name, labels = {}, seconds = 0) {
+  function observe(name, labels = {}, value = 0, bucketDef = HISTOGRAM_BUCKETS_SECONDS) {
     const key = metricKey(name, labels);
     let entry = histograms.get(key);
     if (!entry) {
       entry = {
         name,
         labels: Object.fromEntries(sortedLabels(labels)),
-        buckets: Array(HISTOGRAM_BUCKETS_SECONDS.length).fill(0),
+        bucketDef,
+        buckets: Array(bucketDef.length).fill(0),
         sum: 0,
         count: 0,
       };
       histograms.set(key, entry);
     }
-    const value = Math.max(0, Number(seconds) || 0);
-    entry.sum += value;
+    const numeric = Math.max(0, Number(value) || 0);
+    entry.sum += numeric;
     entry.count += 1;
-    const index = HISTOGRAM_BUCKETS_SECONDS.findIndex(bound => value <= bound);
+    const index = entry.bucketDef.findIndex(bound => numeric <= bound);
     if (index !== -1) entry.buckets[index] += 1;
   }
 
@@ -189,6 +191,14 @@ export function createTelemetry(options = {}) {
     if (Number.isFinite(record.ttfbMs)) {
       observe('claude_router_upstream_ttfb_seconds', { provider, model }, record.ttfbMs / 1000);
     }
+    if (Number.isFinite(record.tps)) {
+      observe('claude_router_output_tokens_per_second', { provider, model, purpose }, record.tps, HISTOGRAM_BUCKETS_TOKENS_PER_SECOND);
+    }
+    if (Number.isFinite(record.switchPrefillPenaltyMs)) {
+      // A faster-than-baseline switch has no penalty; clamp it to zero.
+      observe('claude_router_switch_prefill_penalty_seconds', { provider, model },
+        Math.max(0, record.switchPrefillPenaltyMs) / 1000);
+    }
     if (record.usage) {
       const tokenFields = {
         input: 'input_tokens',
@@ -208,6 +218,20 @@ export function createTelemetry(options = {}) {
       });
       if (record.route.deescalationOutcome) {
         inc('claude_router_deescalation_total', { outcome: record.route.deescalationOutcome });
+        if (record.route.deescalationOutcome === 'relapse'
+          || record.route.deescalationOutcome === 'probe_relapsed') {
+          inc('claude_router_relapses_total', { outcome: record.route.deescalationOutcome });
+        }
+      }
+      if (record.route.previousProvider && record.route.previousProvider !== record.route.selectedProvider) {
+        inc('claude_router_provider_switches_total', {
+          from_provider: record.route.previousProvider,
+          to_provider: record.route.selectedProvider,
+          source: record.route.source,
+        });
+      }
+      if (record.probeFailureClass) {
+        inc('claude_router_probe_failures_total', { failure_class: record.probeFailureClass });
       }
       if (record.route.escalated) {
         inc('claude_router_escalations_total', {
@@ -243,6 +267,10 @@ export function createTelemetry(options = {}) {
       httpStatus: record.httpStatus || null,
       durationMs: record.durationMs ?? null,
       ttfbMs: record.ttfbMs ?? null,
+      genMs: record.genMs ?? null,
+      tps: record.tps ?? null,
+      switchPrefillPenaltyMs: record.switchPrefillPenaltyMs ?? null,
+      probeFailureClass: record.probeFailureClass || null,
       usage: record.usage || null,
       errorKind: record.errorKind || null,
     }));
@@ -259,7 +287,11 @@ export function createTelemetry(options = {}) {
       outcome,
       http_status: record.httpStatus || null,
       ttfb_ms: record.ttfbMs ?? null,
+      gen_ms: record.genMs ?? null,
       duration_ms: record.durationMs ?? null,
+      tps: record.tps ?? null,
+      switch_prefill_penalty_ms: record.switchPrefillPenaltyMs ?? null,
+      probe_failure_class: record.probeFailureClass || null,
       usage: record.usage || null,
       error_kind: record.errorKind || null,
       route: record.route || null,
@@ -273,16 +305,26 @@ export function createTelemetry(options = {}) {
       let cumulative = 0;
       for (let index = 0; index < entry.buckets.length; index += 1) {
         cumulative += entry.buckets[index];
-        buckets.push({ leSeconds: HISTOGRAM_BUCKETS_SECONDS[index], count: cumulative });
+        const bucket = { le: entry.bucketDef[index], count: cumulative };
+        // Keep the original field for consumers of the seconds histograms.
+        if (entry.bucketDef === HISTOGRAM_BUCKETS_SECONDS) bucket.leSeconds = entry.bucketDef[index];
+        buckets.push(bucket);
       }
-      histogramSummary.push({
+      const summary = {
         name: entry.name,
         labels: entry.labels,
         count: entry.count,
-        sumSeconds: Math.round(entry.sum * 1000) / 1000,
-        averageSeconds: entry.count ? Math.round((entry.sum / entry.count) * 1000) / 1000 : 0,
+        sum: Math.round(entry.sum * 1000) / 1000,
+        average: entry.count ? Math.round((entry.sum / entry.count) * 1000) / 1000 : 0,
         buckets,
-      });
+      };
+      // Preserve the established units for the original seconds histograms,
+      // but do not describe a tokens/second histogram as seconds.
+      if (entry.bucketDef === HISTOGRAM_BUCKETS_SECONDS) {
+        summary.sumSeconds = summary.sum;
+        summary.averageSeconds = summary.average;
+      }
+      histogramSummary.push(summary);
     }
     return {
       enabled: settings.enabled,
@@ -327,7 +369,7 @@ export function createTelemetry(options = {}) {
       let cumulative = 0;
       for (let index = 0; index < entry.buckets.length; index += 1) {
         cumulative += entry.buckets[index];
-        lines.push(`${entry.name}_bucket${renderLabels({ ...entry.labels, le: String(HISTOGRAM_BUCKETS_SECONDS[index]) })} ${cumulative}`);
+        lines.push(`${entry.name}_bucket${renderLabels({ ...entry.labels, le: String(entry.bucketDef[index]) })} ${cumulative}`);
       }
       lines.push(`${entry.name}_bucket${renderLabels({ ...entry.labels, le: '+Inf' })} ${entry.count}`);
       lines.push(`${entry.name}_sum${renderLabels(entry.labels)} ${entry.sum.toFixed(3)}`);

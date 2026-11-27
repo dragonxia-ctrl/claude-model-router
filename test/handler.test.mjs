@@ -139,7 +139,7 @@ test('upstream probe failure is committed and exported as a de-escalation metric
     headers: { authorization: 'Bearer local-test-token' },
   });
   const metrics = await response.text();
-  assert.match(metrics, /claude_router_deescalation_total\{outcome="probe_failed"\} 1/);
+  assert.match(metrics, /claude_router_deescalation_total\{outcome="probe_unavailable"\} 1/);
 });
 
 test('route_decision log carries audit keys and de-escalation outcome', async t => {
@@ -184,6 +184,9 @@ test('route_decision log carries audit keys and de-escalation outcome', async t 
   assert.equal(decision.deescalationCheckpoint, null);
   assert.equal(decision.kimiRequests, 0);
   assert.equal(decision.requiredKimiRequests, 0);
+  assert.equal(decision.latencyPressure, false);
+  assert.equal(decision.kimiTps, null);
+  assert.equal(decision.deepseekTps, null);
 });
 
 test('preview is side-effect free and sticky routing avoids repeated triage', async t => {

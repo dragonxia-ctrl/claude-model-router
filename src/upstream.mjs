@@ -43,12 +43,20 @@ export async function forward({
       console.error(JSON.stringify({ event: 'outcome_observer_error', requestId, message: err.message }));
     }
     if (observed?.outcome) {
-      record.route = { ...route, deescalationOutcome: observed.outcome };
+      record.route = {
+        ...route,
+        deescalationOutcome: observed.outcome,
+        deescalationFailureClass: observed.failureClass || null,
+      };
       console.log(JSON.stringify({
         event: 'deescalation_probe_outcome', time: new Date().toISOString(), requestId,
         provider: provider.name, outcome: observed.outcome, httpStatus: status || null,
-        errorKind: failureKind, attempts: observed.attempts ?? null,
+        errorKind: failureKind, failureClass: observed.failureClass ?? null,
+        attempts: observed.attempts ?? null,
         requiredKimiRequests: observed.requiredKimiRequests ?? null,
+        availabilityFailures: observed.availabilityFailures ?? null,
+        relapseStreak: observed.streak ?? null,
+        blockers: observed.blockers ?? null,
       }));
     }
     telemetry?.recordRequest?.(record);

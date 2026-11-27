@@ -17,7 +17,9 @@ Suites:
 | `classifier.test.mjs` | Default policy, explicit overrides, evidence rules, false positives |
 | `progress.test.mjs` | Tool classification, verification failures, repeated errors/mutations |
 | `decision-engine.test.mjs` | Sticky history, semantic cache, confidence, fallback |
-| `deescalation.test.mjs` | Checkpoints, clean recovery, probe success/failure, relapse, backoff, hard locks |
+| `deescalation.test.mjs` | Checkpoints, clean recovery, probe success/failure, availability vs invalid-request failures, relapse, backoff, hard locks |
+| `deescalation-correctness.test.mjs` | Per-task state isolation, relapse confirmation, failure-rate denominator, probe failure classes, manual de-escalation |
+| `latency.test.mjs` | TTFB-adjusted tokens/second, provider EMA, pressure hysteresis, switch penalty, optional latency checkpoints, cooldown |
 | `config-store.test.mjs` | Validation, reload, restart-required detection |
 | `handler.test.mjs` | Auth, HTTP routes, preview, model rewrite, streaming, sticky/probe outcome integration |
 | `telemetry.test.mjs` | Health endpoints, real usage, Prometheus, JSONL retention and pseudonymization |

@@ -37,6 +37,48 @@ test('usage tap extracts JSON and split SSE usage without retaining response tex
   });
 });
 
+test('telemetry records generation speed, switch cost and probe failure class', () => {
+  const telemetry = createTelemetry();
+  telemetry.recordRequest({
+    at: new Date().toISOString(), requestId: 'latency-1', provider: 'kimi', model: 'kimi-k3.1-pro',
+    purpose: 'main', outcome: 'success', httpStatus: 200, ttfbMs: 500, durationMs: 5_500,
+    genMs: 5_000, tps: 20,
+    usage: { output_tokens: 100 },
+  });
+  telemetry.recordRequest({
+    at: new Date().toISOString(), requestId: 'latency-2', provider: 'deepseek', model: 'deepseek-flash',
+    purpose: 'main', outcome: 'success', httpStatus: 200, ttfbMs: 1_500, durationMs: 2_500,
+    genMs: 1_000, tps: 100, switchPrefillPenaltyMs: 1_200,
+    usage: { output_tokens: 100 },
+    route: {
+      selectedProvider: 'deepseek', source: 'deescalation_probe', previousProvider: 'kimi',
+      escalated: false, deescalationOutcome: 'probe_unavailable',
+    },
+    probeFailureClass: 'unavailable',
+  });
+  telemetry.recordRequest({
+    at: new Date().toISOString(), requestId: 'latency-3', provider: 'kimi', model: 'kimi-k3.1-pro',
+    purpose: 'main', outcome: 'success', httpStatus: 200, ttfbMs: 500, durationMs: 5_500,
+    route: { selectedProvider: 'kimi', source: 'relapse', previousProvider: 'deepseek', deescalationOutcome: 'relapse' },
+  });
+  const text = telemetry.renderPrometheus();
+  assert.match(text, /claude_router_output_tokens_per_second_count\{model="kimi-k3.1-pro",provider="kimi",purpose="main"\} 1/);
+  assert.match(text, /claude_router_output_tokens_per_second_sum\{model="kimi-k3.1-pro",provider="kimi",purpose="main"\} 20\.000/);
+  assert.match(text, /claude_router_switch_prefill_penalty_seconds_bucket\{.*le="2.5".*\} 1/);
+  assert.match(text, /claude_router_provider_switches_total\{from_provider="kimi",source="deescalation_probe",to_provider="deepseek"\} 1/);
+  assert.match(text, /claude_router_probe_failures_total\{failure_class="unavailable"\} 1/);
+  assert.match(text, /claude_router_relapses_total\{outcome="relapse"\} 1/);
+  const speed = telemetry.snapshot().histograms.find(entry => entry.name === 'claude_router_output_tokens_per_second');
+  assert.equal(speed.buckets[0].le, 1);
+  assert.equal(speed.sum, 20);
+  assert.equal(speed.average, 20);
+  assert.equal(speed.sumSeconds, undefined);
+  const duration = telemetry.snapshot().histograms.find(entry => entry.name === 'claude_router_request_duration_seconds' && entry.labels.provider === 'kimi');
+  assert.equal(duration.sumSeconds, 11);
+  assert.equal(duration.averageSeconds, 5.5);
+  assert.equal(duration.buckets[0].leSeconds, 0.05);
+});
+
 test('telemetry records bounded metrics, real token counters, and Prometheus histograms', () => {
   const telemetry = createTelemetry();
   telemetry.recordRequest({

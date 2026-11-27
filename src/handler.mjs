@@ -7,6 +7,7 @@ import { liveHealth, readinessHealth, deepHealth } from './health.mjs';
 import { ROUTER_VERSION } from './version.mjs';
 import { createDecisionEngine } from './decision-engine.mjs';
 import { createTelemetry } from './telemetry.mjs';
+import { createLatencyTracker } from './latency.mjs';
 import { sessionTagFor } from './session.mjs';
 
 export function createHandler(configSource, options = {}) {
@@ -18,8 +19,10 @@ export function createHandler(configSource, options = {}) {
       ...(getConfig().telemetry || {}),
       ...(options.telemetryOptions || {}),
     });
+  const latencyTracker = options.latencyTracker || createLatencyTracker(getConfig, { now: options.now });
   const engine = createDecisionEngine(getConfig, {
     ...options,
+    latencyTracker,
     onTriage(record) {
       telemetry?.recordRequest?.({
         at: new Date().toISOString(),
@@ -145,9 +148,12 @@ export function createHandler(configSource, options = {}) {
         previousProvider: previousProvider || null,
         escalated: Boolean(previousProvider && previousProvider !== provider.name && provider.name === 'kimi'),
         deescalationOutcome: pathname === '/v1/messages' ? transition?.outcome || null : null,
+        deescalationFailureClass: transition?.failureClass || null,
+        deescalationCheckpoint: checkpoint || null,
       };
       res.setHeader('x-router-provider', provider.name);
       res.setHeader('x-router-source', decision.source);
+      const latency = latencyTracker.snapshot();
       console.log(JSON.stringify({
         event: 'route_decision',
         time: new Date().toISOString(), requestId, provider: provider.name,
@@ -162,6 +168,9 @@ export function createHandler(configSource, options = {}) {
         deescalationCheckpoint: checkpoint || null,
         kimiRequests: state?.kimiRequests ?? null,
         requiredKimiRequests: state?.requiredKimiRequests ?? null,
+        latencyPressure: latency.pressure,
+        kimiTps: latency.kimiTps,
+        deepseekTps: latency.deepseekTps,
       }));
       await forward({
         req, res, body, provider, requestId, telemetry, route,
